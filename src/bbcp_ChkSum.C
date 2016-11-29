@@ -31,6 +31,7 @@
 #include "bbcp_A32.h"
 #include "bbcp_A32_zlib.h"
 #include "bbcp_C32.h"
+#include "bbcp_C32_Zip.h"
 #include "bbcp_MD5.h"
 #include "bbcp_MD5_openssl.h"
 
@@ -50,6 +51,7 @@ bbcp_ChkSum *bbcp_ChkSum::Alloc(int csType)
 #else
           case bbcp_csMD5: return (bbcp_ChkSum *)new bbcp_MD5;
 #endif
+          case bbcp_csC32Z:return (bbcp_ChkSum *)new bbcp_C32_Zip;
           default:         break;
          }
 
