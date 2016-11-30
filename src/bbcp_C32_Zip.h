@@ -50,22 +50,38 @@ class bbcp_C32_Zip : public bbcp_ChkSum
 {
 public:
 
-void  Init() { crc = CRC32_XINIT; }
+void  Init() { crc = CRC32_XINIT; has_final = false; }
 
 void  Update(const char *Buff, int BLen);
 
 int   csSize() {return sizeof(crc);}
 
-char *Final(char **Text=0)
+char *csCurr(char **Text=0) {
+    if( has_final ) {
+        return (char *)&crc;
+    }
+    tmpcrc = finish(Text);
+    return (char *)&tmpcrc;
+}
+
+char *Final(char **Text=0) {
+    has_final = true;
+    crc = finish(Text);
+    return (char *)&crc;
+}
+
+private:
+uint32_t finish(char **Text=0)
                {
-                crc = crc ^ CRC32_XOROT;
+                uint32_t finished = crc ^ CRC32_XOROT;
 #ifndef BBCP_BIG_ENDIAN
-                crc = htonl(crc);
+                finished = htonl(finished);
 #endif
-                if (Text) *Text = x2a((char *)&crc);
-                return (char *)&crc;
+                if (Text) *Text = x2a((char *)&finished);
+                return finished;
                }
 
+public:
 const char *Type() {return "c32zip";}
 
             bbcp_C32_Zip() {Init();}
@@ -75,5 +91,7 @@ private:
 static const uint32_t CRC32_XINIT = 0xffffffff;
 static const uint32_t CRC32_XOROT = 0xffffffff;
              uint32_t crc;
+             uint32_t tmpcrc;
+                 bool has_final;
 };
 #endif
