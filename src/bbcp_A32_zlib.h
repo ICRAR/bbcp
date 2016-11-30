@@ -50,13 +50,23 @@ class bbcp_A32_zlib : public bbcp_ChkSum
     
     int   csSize() {return sizeof(adler);}
 
+    char *csCurr(char **Text=0) {
+        curradler = finish(Text);
+        return (char *)&curradler;
+    }
+
     char *Final(char **Text=0) {
-       
-#ifndef BBCP_BIG_ENDIAN
-        adler = htonl(adler);
-#endif
-        if (Text) *Text = x2a((char *)&adler);
+        adler = finish(Text);
         return (char *)&adler;
+    }
+
+    uLong finish(char **Text) {
+        uLong the_adler = adler;
+#ifndef BBCP_BIG_ENDIAN
+        the_adler = htonl(the_adler);
+#endif
+        if (Text) *Text = x2a((char *)&the_adler);
+        return the_adler;
     }
 
     const char *Type() {return "a32";}
@@ -66,6 +76,7 @@ class bbcp_A32_zlib : public bbcp_ChkSum
 
  private:
     uLong adler;
-    
+    uLong curradler;
+
 };
 #endif

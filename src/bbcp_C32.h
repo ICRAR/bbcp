@@ -41,28 +41,48 @@ class bbcp_C32 : public bbcp_ChkSum
 {
 public:
 
-void  Init() {C32Result = CRC32_XINIT; TotLen = 0;}
+void  Init() {C32Result = CRC32_XINIT; TotLen = 0; has_final = false; }
 
 void  Update(const char *Buff, int BLen);
 
 int   csSize() {return sizeof(C32Result);}
 
-char *Final(char **Text=0)
+
+char *csCurr(char **Text=0) {
+    if( has_final ) {
+        return (char *)&C32Result;
+    }
+    tmpcrc = finish(Text);
+    return (char *)&tmpcrc;
+
+}
+
+char *Final(char **Text=0) {
+    has_final = true;
+    C32Result = finish(Text);
+    return (char *)&C32Result;
+}
+
+private:
+uint finish(char **Text)
                {char buff[sizeof(long long)];
                 long long tLcs = TotLen;
                 int i = 0;
+                has_final = true;
+                uint crc = C32Result;
                 if (tLcs)
                    {while(tLcs) {buff[i++] = tLcs & 0xff ; tLcs >>= 8;}
-                    Update(buff, i);
+                    crc = do_crc(crc, buff, i);
                    }
-                TheResult = C32Result ^ CRC32_XOROT;
+                crc = crc ^ CRC32_XOROT;
 #ifndef BBCP_BIG_ENDIAN
-                TheResult = htonl(TheResult);
+                crc = htonl(crc);
 #endif
-                if (Text) *Text = x2a((char *)&TheResult);
-                return (char *)&TheResult;
+                if (Text) *Text = x2a((char *)&crc);
+                return crc;
                }
 
+public:
 const char *Type() {return "c32";}
 
             bbcp_C32() {Init();}
@@ -73,7 +93,11 @@ static const uint CRC32_XINIT = 0;
 static const uint CRC32_XOROT = 0xffffffff;
 static       uint crctable[256];
              uint C32Result;
-             uint TheResult;
        long  long TotLen;
+         uint32_t tmpcrc;
+             bool has_final;
+
+             uint do_crc(uint crc, const char *p, int reclen);
+
 };
 #endif

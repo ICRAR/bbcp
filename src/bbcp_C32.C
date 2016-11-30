@@ -167,7 +167,13 @@ void bbcp_C32::Update(const char *p, int reclen)
 // Process each byte
 //
    TotLen += reclen;
-   while(reclen-- > 0)
-        C32Result = (C32Result<<8) 
-                  ^ crctable[(unsigned char)((C32Result>>24)^*p++)];
+   C32Result = do_crc(C32Result, p, reclen);
+}
+
+uint bbcp_C32::do_crc(uint crc, const char *p, int reclen)
+{
+   while(reclen-- > 0) {
+      crc= (crc<<8) ^ crctable[(unsigned char)((crc>>24)^*p++)];
+   }
+   return crc;
 }
