@@ -110,6 +110,7 @@ int           csType;
 #define bbcp_csC32    2
 #define bbcp_csMD5    3
 #define bbcp_csC32Z   4
+#define bbcp_csC32C   5
 
 int           csFD;
 char         *csPath;
