@@ -77,6 +77,7 @@ SOURCE =      \
      bbcp_Args.C \
      bbcp_BuffPool.C \
      bbcp_C32.C \
+     bbcp_C32C.C \
      bbcp_C32_Zip.C \
      bbcp_ChkSum.C \
      bbcp_Config.C \
@@ -117,6 +118,7 @@ OBJECT =      \
      $(OBJDIR)/bbcp_Args.o \
      $(OBJDIR)/bbcp_BuffPool.o \
      $(OBJDIR)/bbcp_C32.o \
+     $(OBJDIR)/bbcp_C32C.o \
      $(OBJDIR)/bbcp_C32_Zip.o \
      $(OBJDIR)/bbcp_ChkSum.o \
      $(OBJDIR)/bbcp_Config.o \
@@ -291,6 +293,10 @@ $(OBJDIR)/bbcp_BuffPool.o: bbcp_BuffPool.C bbcp_BuffPool.h bbcp_Debug.h \
 
 $(OBJDIR)/bbcp_C32.o: bbcp_C32.C bbcp_C32.h bbcp_ChkSum.h bbcp_Endian.h
 	@echo Compiling bbcp_C32.C
+	@$(CC) -c $(CFLAGS) $(INCLUDE) $(*F).C -o $(OBJDIR)/$(*F).o
+
+$(OBJDIR)/bbcp_C32C.o: bbcp_C32C.C bbcp_C32C.h bbcp_ChkSum.h bbcp_Endian.h
+	@echo Compiling bbcp_C32C.C
 	@$(CC) -c $(CFLAGS) $(INCLUDE) $(*F).C -o $(OBJDIR)/$(*F).o
 
 $(OBJDIR)/bbcp_C32_Zip.o: bbcp_C32_Zip.C bbcp_C32_Zip.h bbcp_ChkSum.h bbcp_Endian.h
