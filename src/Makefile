@@ -206,16 +206,7 @@ makeLinuxi386:
 	INCLUDE="$(ENVINCLUDE)" \
 	LIBS="$(LNXLIBS32)"
 
-makeLinuxx86_64:
-	@make $(MKPARMS) RR=$(RELNUM) \
-	CC=$(LNXCC) \
-	BB=$(LNXcc) \
-	CFLAGS="$(ENVCFLAGS) $(LNXOPT)" \
-	BFLAGS="$(ENVCFLAGS) $(LNXOPT_B)" \
-	INCLUDE="$(ENVINCLUDE)" \
-	LIBS="$(LNXLIBS64)"
-	
-makeLinuxaarch64:
+makeLinuxx86_64 makeLinuxaarch64:
 	@make $(MKPARMS) RR=$(RELNUM) \
 	CC=$(LNXCC) \
 	BB=$(LNXcc) \
