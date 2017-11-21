@@ -560,7 +560,7 @@ int bbcp_Protocol::Request(bbcp_Node *Node)
        if (retc) Request_exit(retc);
        texists = !bbcp_Cfg.snkSpec->Stat(0);
        dotrim = !outDir; dRM = bbcp_Cfg.snkSpec->pathname;
-cerr <<"dotrim=" <<dotrim <<" outd=" <<outDir <<" dRM=" <<dRM<<endl;
+//cerr <<"dotrim=" <<dotrim <<" outd=" <<outDir <<" dRM=" <<dRM<<endl;
       }
 
 // Establish the target directory
