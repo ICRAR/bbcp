@@ -208,7 +208,7 @@ makeLinuxi386:
 	INCLUDE="$(ENVINCLUDE)" \
 	LIBS="$(LNXLIBS32)"
 
-makeLinuxx86_64:
+makeLinuxx86_64 makeLinuxaarch64:
 	@make $(MKPARMS) RR=$(RELNUM) \
 	CC=$(LNXCC) \
 	BB=$(LNXcc) \
