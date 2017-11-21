@@ -191,11 +191,20 @@ FreeBSD:
 	LIBS="$(BSDLIBS)"
 
 Linux:
-	@make makeLinux`/bin/uname -i` \
+	@make makeLinux`/bin/uname -m` \
 	MD5HEADER=bbcp_MD5_openssl.h \
 	OBJMD5="$(OBJDIR)/bbcp_MD5_openssl.o"
 
 makeLinuxi386:
+	@make $(MKPARMS)  \
+	CC=$(LNXCC) \
+	BB=$(LNXcc) \
+	CFLAGS="$(ENVCFLAGS) $(LNXOPT)" \
+	BFLAGS="$(ENVCFLAGS) $(LNXOPT_B)" \
+	INCLUDE="$(ENVINCLUDE)" \
+	LIBS="$(LNXLIBS32)"
+
+makeLinuxi686:
 	@make $(MKPARMS)  \
 	CC=$(LNXCC) \
 	BB=$(LNXcc) \

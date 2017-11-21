@@ -2,8 +2,9 @@
 /*                                                                            */
 /*                        b b c p _ F S _ P i p e . C                         */
 /*                                                                            */
-/* (c) 2011 by the Board of Trustees of the Leland Stanford, Jr., University  */
-/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2011-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
+/*                            All Rights Reserved                             */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */

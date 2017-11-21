@@ -4,7 +4,8 @@
 /*                                                                            */
 /*                           b b c p _ N o d e . h                            */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -29,6 +30,7 @@
 
 #include <unistd.h>
 #include <sys/types.h>
+#include "bbcp_Config.h"
 #include "bbcp_FileSpec.h"
 #include "bbcp_File.h"
 #include "bbcp_Link.h"

@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                         b b c p _ R T C o p y . C                          */
 /*                                                                            */
-/*(c) 2010-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2010-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -49,7 +50,7 @@
 /*                         G l o b a l   V a l u e s                          */
 /******************************************************************************/
   
-extern bbcp_Config   bbcp_Config;
+extern bbcp_Config   bbcp_Cfg;
 
        bbcp_RTCopy   bbcp_RTCopy;
 
@@ -102,7 +103,7 @@ void *bbcp_RTCopy::Lock(bbcp_Semaphore *semP)
 
 // Check if we should verify this copy
 //
-   if (Grow && bbcp_Config.Options & bbcp_RTCVERC)
+   if (Grow && bbcp_Cfg.Options & bbcp_RTCVERC)
       {lfSize = FSp->getSize(lkFD);
        if (lfSize < 0)
           {rc = static_cast<int>(-lfSize);
@@ -150,7 +151,7 @@ long long bbcp_RTCopy::Prep(long long rdsk, int rdsz, ssize_t &rlen)
 // Setup high watermark and the time limit, if any
 //
    Hwm   = rdsk + rdsz;
-   tVal  = bbcp_Config.rtLimit;
+   tVal  = bbcp_Cfg.rtLimit;
    pSize = -1;
 
 // We continue waiting for enough data to fully satisfy this read or until
@@ -162,10 +163,10 @@ long long bbcp_RTCopy::Prep(long long rdsk, int rdsz, ssize_t &rlen)
             {Left = cSize - Hwm;
              return (size_t)0x7fffffff;
             }
-         sleep(bbcp_Config.rtCheck);
+         sleep(bbcp_Cfg.rtCheck);
          if (tVal)
             {if (cSize != pSize) {tLim = tVal; pSize = cSize;}
-                 else if ((tLim -= bbcp_Config.rtCheck) <= 0)
+                 else if ((tLim -= bbcp_Cfg.rtCheck) <= 0)
                          {rlen = -ETIMEDOUT; return -1;}
             }
         }
@@ -193,14 +194,14 @@ int bbcp_RTCopy::Start(bbcp_FileSystem *fsp, const char *iofn, int iofd)
    ioFD = iofd;
    Grow = 1;
    Left = 0;
-   Blok = (bbcp_Config.Options & bbcp_RTCBLOK ? bbcp_Config.Streams : 0);
+   Blok = (bbcp_Cfg.Options & bbcp_RTCBLOK ? bbcp_Cfg.Streams : 0);
    FSp  = fsp;
 
 // Initialize variable dependent on how we will do locking
 //
-   if (bbcp_Config.rtLockf)
-      {lkFN = bbcp_Config.rtLockf;
-       lkFD = bbcp_Config.rtLockd;
+   if (bbcp_Cfg.rtLockf)
+      {lkFN = bbcp_Cfg.rtLockf;
+       lkFD = bbcp_Cfg.rtLockd;
       } else {
        lkFN = iofn;
        lkFD = dup(iofd);

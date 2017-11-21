@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                           b b c p _ L i n k . C                            */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -47,7 +48,7 @@
   
 extern bbcp_BuffPool bbcp_BPool;
   
-extern bbcp_Config   bbcp_Config;
+extern bbcp_Config   bbcp_Cfg;
 
 extern bbcp_Network  bbcp_Net;
 
@@ -65,8 +66,8 @@ int bbcp_Link::Wait  = 0;
 bbcp_Link::bbcp_Link(int fd, const char *lname)
           : LinkNum(0), Buddy(0),  Rendezvous(0), IOB(fd), Lname(strdup(lname))
 {
-   csObj = (bbcp_Config.csOpts & bbcp_csLink
-         ? bbcp_ChkSum::Alloc(bbcp_Config.csType?bbcp_Config.csType:bbcp_csMD5)
+   csObj = (bbcp_Cfg.csOpts & bbcp_csLink
+         ? bbcp_ChkSum::Alloc(bbcp_Cfg.csType?bbcp_Cfg.csType:bbcp_csMD5)
          : 0);
 }
   
@@ -84,7 +85,7 @@ int bbcp_Link::Buff2Net()
 
 // Establish logging options
 //
-   if (bbcp_Config.Options & bbcp_LOGOUT) IOB.Log(0, "NET");
+   if (bbcp_Cfg.Options & bbcp_LOGOUT) IOB.Log(0, "NET");
 
 // Do this until an error of eof
 //
@@ -164,7 +165,7 @@ int bbcp_Link::Net2Buff()
 
 // Establish logging options
 //
-   if (bbcp_Config.Options & bbcp_LOGIN) IOB.Log("NET", 0);
+   if (bbcp_Cfg.Options & bbcp_LOGIN) IOB.Log("NET", 0);
 
 // Do this until an error of eof
 //
@@ -213,7 +214,7 @@ int bbcp_Link::Net2Buff()
 // the buddy thread twice since that is the most that it may need to read.
 //
 
-   if (Nudge) {Wait = 0; i = bbcp_Config.Streams;
+   if (Nudge) {Wait = 0; i = bbcp_Cfg.Streams;
                do {Buddy->Rendezvous.Post();} while(i--);
               }
    if (notdone)
@@ -254,9 +255,9 @@ int bbcp_Link::Control_In(bbcp_Buffer *bp)
 //
    if (hp->cmnd == (char)BBCP_CLCKS)
       {DEBUG("Checksum close request received on link " <<LinkNum);
-       if (bbcp_Config.csOpts & bbcp_csSend)
+       if (bbcp_Cfg.csOpts & bbcp_csSend)
           {DEBUG("Setting checksum from link " <<LinkNum);
-           bbcp_Config.setCS(bp->bHdr.cksm);
+           bbcp_Cfg.setCS(bp->bHdr.cksm);
            bp->blen = 0;
           }
        bbcp_BPool.putFullBuff(bp);

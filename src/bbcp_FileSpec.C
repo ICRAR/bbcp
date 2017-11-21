@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                       b b c p _ F i l e S p e c . C                        */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -46,7 +47,7 @@
 /*                      E x t e r n a l   O b j e c t s                       */
 /******************************************************************************/
 
-extern bbcp_Config   bbcp_Config;
+extern bbcp_Config   bbcp_Cfg;
 
 /******************************************************************************/
 /*                     L o c a l   D e f i n i t i o n s                      */
@@ -78,25 +79,25 @@ extern "C"
 void *bbcp_FileSpecIndex(void *pp)
 {
    static int negVal = -1;
-   bbcp_FileSpec  *fP = bbcp_Config.srcSpec;
-   char xBuff[128];
-   time_t tNow, xMsg = time(0)+bbcp_Config.Progint;
-   int numD = 0, numF = 0, numL = 0, slOpt;
-   int Blab = (bbcp_Config.Options & bbcp_VERBOSE) || bbcp_Config.Progint;
+   bbcp_FileSpec  *fP = bbcp_Cfg.srcSpec;
+   char xBuff[256], yBuff[128];
+   time_t tNow, xMsg = time(0)+bbcp_Cfg.Progint;
+   int numD = 0, numE = 0, numF = 0, numL = 0, slOpt;
+   int Blab = (bbcp_Cfg.Options & bbcp_VERBOSE) || bbcp_Cfg.Progint;
    bool aOK = true;
 
 // If we are following symlinks then we need to allocate an unordered set
 // to keep track of them to prevent copying self-referential trees. In any
 // case, establish the symlink processing option.
 //
-        if (bbcp_Config.Options & bbcp_SLFOLLOW)
+        if (bbcp_Cfg.Options & bbcp_SLFOLLOW)
            {slOpt = 0; pathSet = new bbcp_Set();}
-   else if (bbcp_Config.Options & bbcp_SLKEEP) slOpt = -1;
+   else if (bbcp_Cfg.Options & bbcp_SLKEEP) slOpt = -1;
    else slOpt = 1;
 
 // Set lastp to the last node in the list
 //
-   for (lastp = bbcp_Config.srcSpec; lastp->next != NULL; lastp = lastp->next)
+   for (lastp = bbcp_Cfg.srcSpec; lastp->next != NULL; lastp = lastp->next)
       ; // nothing to do -- just setting lastp
 
 // Extend all directories with the files therein
@@ -104,15 +105,21 @@ void *bbcp_FileSpecIndex(void *pp)
    if (Blab) bbcp_Fmsg("Dirlist", "Indexing files to be copied...");
    while(fP && aOK)
         {if ('d' == fP->Info.Otype)
-            {numD++; aOK = fP->ExtendFileSpec(numF, numL, slOpt);}
+            {numD++; aOK = fP->ExtendFileSpec(numF, numL, slOpt);
+             if (fP->isEmpty)
+                {numE++;
+                 if (!(bbcp_Cfg.Option2 & bbcp2_SKPEDIR)) fP->isEmpty = false;
+                }
+            }
          fP = fP->next;
-         if (bbcp_Config.Progint && (tNow = time(0)) >= xMsg)
-            {sprintf(xBuff, "%d file%s and %d link%s in %d director%s so far...",
+         if (bbcp_Cfg.Progint && (tNow = time(0)) >= xMsg)
+            {sprintf(xBuff, "%d file%s and %d link%s in %d director%s "
+                            "(%d empty) so far...",
                      numF, (numF == 1 ? "" : "s"),
                      numL, (numL == 1 ? "" : "s"),
-                     numD, (numD == 1 ? "y": "ies"));
+                     numD, (numD == 1 ? "y": "ies"), numE);
              bbcp_Fmsg("Dirlist", "Found", xBuff);
-             xMsg = tNow+bbcp_Config.Progint;
+             xMsg = tNow+bbcp_Cfg.Progint;
             }
         }
 
@@ -130,10 +137,21 @@ void *bbcp_FileSpecIndex(void *pp)
 // Indicate what we found if so wanted
 //
    if (Blab)
-      {sprintf(xBuff, "%d file%s and %d link%s in %d director%s.",
+      {if (numE)
+          {numD -= numE;
+           if (bbcp_Cfg.Option2 & bbcp2_SKPEDIR)
+              {sprintf(yBuff, " with %d empty director%s skipped",
+                       numE, (numE == 1 ? "y": "ies"));
+              } else {
+               sprintf(yBuff, " plus %d empty director%s",
+                       numE, (numE == 1 ? "y": "ies"));
+              }
+           } else *yBuff = 0;
+
+       sprintf(xBuff, "%d file%s and %d link%s in %d director%s%s.",
                numF, (numF == 1 ? "" : "s"),
                numL, (numL == 1 ? "" : "s"),
-               numD, (numD == 1 ? "y": "ies"));
+               numD, (numD == 1 ? "y": "ies"), yBuff);
        bbcp_Fmsg("Source", "Copying", xBuff);
       }
 
@@ -173,7 +191,7 @@ int bbcp_FileSpec::Compose(long long did, char *dpath, int dplen, char *fname)
 // Get the current state of the file or directory
 //
         if ((retc = FSp->Stat(targpath, &Targ))) targetsz = 0;
-   else if (Targ.Otype == 'p' && (bbcp_Config.Options & bbcp_XPIPE))
+   else if (Targ.Otype == 'p' && (bbcp_Cfg.Options & bbcp_XPIPE))
                                {targetsz =  0; return 0;}
    else if (Targ.Otype != 'f') {targetsz = -1; return 0;}
    else {targetsz = (long long)Targ.size;
@@ -183,12 +201,12 @@ int bbcp_FileSpec::Compose(long long did, char *dpath, int dplen, char *fname)
 
 // Create signature filename if append mode is enabled and this is a file
 //
-   if (bbcp_Config.Options & bbcp_APPEND)
+   if (bbcp_Cfg.Options & bbcp_APPEND)
       {char buff[1025], *rp;
        if ((rp = rindex(targetfn,'/'))) rp++;
           else rp = targetfn;
        snprintf(buff, sizeof(buff)-1, "%s/bbcp.%s.%llx.%s",
-                bbcp_Config.CKPdir, hostname, did, rp);
+                bbcp_Cfg.CKPdir, hostname, did, rp);
        buff[sizeof(buff)-1] = '\0';
        targsigf = strdup(buff);
        DEBUG("Append signature file is " <<targsigf);
@@ -230,7 +248,7 @@ int bbcp_FileSpec::Create_Path()
 // in the directory. This will later be set to the true mode if it differs.
 //
    DEBUG("Make path " <<Info.mode <<' ' <<targpath);
-   if ((retc = FSp->MKDir(targpath, bbcp_Config.ModeDC)))
+   if ((retc = FSp->MKDir(targpath, bbcp_Cfg.ModeDC)))
      {if (retc == -EEXIST) return 0;
          else return bbcp_Emsg("Create_Path", retc, "creating path", targpath);
      }
@@ -367,10 +385,10 @@ bool bbcp_FileSpec::ExtendFileSpec(int &numF, int &numL, int slOpt)
    DIR           *dirp;
    char           relative_name[1024], absolute_name[4096];
    struct stat    sbuf;
-   int            accD = (bbcp_Config.Options & bbcp_RXONLY ? R_OK|X_OK : 0);
-   int            accF = (bbcp_Config.Options & bbcp_RDONLY ? R_OK : 0);
-   int            dirFD;
-   bool           aOK = true, blab = (bbcp_Config.Options & bbcp_VERBOSE) != 0;
+   int            accD = (bbcp_Cfg.Options & bbcp_RXONLY ? R_OK|X_OK : 0);
+   int            accF = (bbcp_Cfg.Options & bbcp_RDONLY ? R_OK : 0);
+   int            dirFD, numEnt = 0;
+   bool           aOK = true, blab = (bbcp_Cfg.Options & bbcp_VERBOSE) != 0;
 
    // Open the directory as we will need a file descriptor to it. Different
    // operaing systems have different ways of doing this.
@@ -453,7 +471,12 @@ bool bbcp_FileSpec::ExtendFileSpec(int &numF, int &numL, int slOpt)
       newp->next = NULL;
       lastp->next = newp;
       lastp = newp;
+      numEnt++;
    }
+
+   // Flag this directory as empty or not.
+   //
+   if (!numEnt) isEmpty = true;
 
    if (dirp) closedir(dirp); // This also closes the underlying fd
    return aOK;
@@ -469,11 +492,11 @@ int bbcp_FileSpec::Finalize(int retc)
 // If an error occured, see what we should do
 //
    if (retc)
-      {if (bbcp_Config.Options & (bbcp_KEEP|bbcp_NOUNLINK)) return retc;
+      {if (bbcp_Cfg.Options & (bbcp_KEEP|bbcp_NOUNLINK)) return retc;
        FSp->RM(targpath);
       }
-      else if (bbcp_Config.Options & bbcp_PCOPY) setStat(bbcp_Config.Mode);
-              else FSp->setMode(targpath, bbcp_Config.Mode);
+      else if (bbcp_Cfg.Options & bbcp_PCOPY) setStat(bbcp_Cfg.Mode);
+              else FSp->setMode(targpath, bbcp_Cfg.Mode);
 
 // Delete the signature file if one exists
 //
@@ -498,7 +521,7 @@ void bbcp_FileSpec::Parse(char *spec, int isPipe)
    if (fspec) free(fspec);
    fspec = strdup(spec);
    username = hostname = pathname = filename = filereqn = 0;
-   seqno = bbcp_Config.lastseqno++;
+   seqno = bbcp_Cfg.lastseqno++;
 
 // Prepare to parse the spec
 //
@@ -538,15 +561,15 @@ void bbcp_FileSpec::Parse(char *spec, int isPipe)
        filereqn = filename;
       } else {
        filename = filereqn = pathname;
-       bbcp_Config.Options |= bbcp_RELATIVE;
-       if (!username) username = bbcp_Config.SrcUser;
-       if (!hostname) hostname = bbcp_Config.SrcHost;
-       if (bbcp_Config.Options & bbcp_SRC && bbcp_Config.SrcBase)
-          {fspec1 = (char *)malloc(strlen(pathname)+bbcp_Config.SrcBlen+1);
-           strcpy(fspec1,   bbcp_Config.SrcBase);
-           strcpy(fspec1+bbcp_Config.SrcBlen, pathname);
+       bbcp_Cfg.Options |= bbcp_RELATIVE;
+       if (!username) username = bbcp_Cfg.SrcUser;
+       if (!hostname) hostname = bbcp_Cfg.SrcHost;
+       if (bbcp_Cfg.Options & bbcp_SRC && bbcp_Cfg.SrcBase)
+          {fspec1 = (char *)malloc(strlen(pathname)+bbcp_Cfg.SrcBlen+1);
+           strcpy(fspec1,   bbcp_Cfg.SrcBase);
+           strcpy(fspec1+bbcp_Cfg.SrcBlen, pathname);
            pathname = fspec1;
-           filename = filereqn = fspec1+bbcp_Config.SrcBlen;
+           filename = filereqn = fspec1+bbcp_Cfg.SrcBlen;
            BuildPaths(); 
           }
       }
@@ -591,13 +614,13 @@ int bbcp_FileSpec::setStat(mode_t Mode)
 
 // Set the mode (mode depends on whether this is a plain preserve or not)
 //
-   if (!(bbcp_Config.Options & bbcp_PTONLY)) Mode = Info.mode;
+   if (!(bbcp_Cfg.Options & bbcp_PTONLY)) Mode = Info.mode;
    if ((retc = FSp->setMode (targpath, Mode)))
       {act = (char *)"setting mode on"; ecode = retc;}
 
 // Set the group only if this is a plain preserve
 //
-   if (!(bbcp_Config.Options & bbcp_PTONLY) && Info.Group)
+   if (!(bbcp_Cfg.Options & bbcp_PTONLY) && Info.Group)
       FSp->setGroup (targpath, Info.Group);
 
 // Check if any errors occured (we ignore these just like cp/scp does)
@@ -649,7 +672,7 @@ int bbcp_FileSpec::Stat(int complain)
 // filespec object only becomes valid after the first stat() call).
 //
    if (!FSp)
-      {fsOpts = (bbcp_Config.Options&bbcp_XPIPE ? bbcp_FileSystem::getFS_Pipe:0);
+      {fsOpts = (bbcp_Cfg.Options&bbcp_XPIPE ? bbcp_FileSystem::getFS_Pipe:0);
        if (!(FSp = bbcp_FileSystem::getFS(pathname, fsOpts)))
           {char savefn = *filename;
            *filename = '\0';
@@ -708,16 +731,16 @@ int bbcp_FileSpec::WriteSigFile()
 int bbcp_FileSpec::Xfr_Done()
 {
    struct stat sbuff;
-   int rc, Force = bbcp_Config.Options & bbcp_FORCE;
+   int rc, Force = bbcp_Cfg.Options & bbcp_FORCE;
 
 // Check if the output was a pipe
 //
-   if (bbcp_Config.Options & bbcp_OPIPE) {targetsz = 0; return 0;}
+   if (bbcp_Cfg.Options & bbcp_OPIPE) {targetsz = 0; return 0;}
 
 // If this is an APPEND request, build the signature file
 //
 //cerr <<"tsz=" <<targetsz <<" isz=" <<Info.size <<" sigf=" <<targsigf <<endl;
-   if (bbcp_Config.Options & bbcp_APPEND)
+   if (bbcp_Cfg.Options & bbcp_APPEND)
       {if (!stat(targsigf, &sbuff))
           {rc = Xfr_Fixup();
            if (rc >= 0 || !Force) return rc;
@@ -742,8 +765,8 @@ int bbcp_FileSpec::Xfr_Done()
 // The file exists, complain unless force or omit has been specified
 //
    if (!Force)
-      {if (bbcp_Config.Options & bbcp_OMIT)
-          {if (bbcp_Config.Options & bbcp_VERBOSE)
+      {if (bbcp_Cfg.Options & bbcp_OMIT)
+          {if (bbcp_Cfg.Options & bbcp_VERBOSE)
               bbcp_Fmsg("Xfr_Done", "Skipping",targpath,"already exists.");
            return 1;
           }
@@ -767,7 +790,7 @@ void bbcp_FileSpec::BuildPaths()
 {
    char delim, *cp = filename, *Slush;
    int plen, same = 0, pfxlen = filename - pathname;
-   bbcp_FileSpec *PS_New, *PS_Prv = 0, *PS_Cur = bbcp_Config.srcPath;
+   bbcp_FileSpec *PS_New, *PS_Prv = 0, *PS_Cur = bbcp_Cfg.srcPath;
 
 // Make sure we have at least one slash here
 //
@@ -796,7 +819,7 @@ void bbcp_FileSpec::BuildPaths()
                 }
              if (PS_Cur) {PS_New->next = PS_Cur->next; PS_Cur->next = PS_New;}
                 else if (PS_Prv) PS_Prv->next = PS_New;
-                        else bbcp_Config.srcPath = PS_New;
+                        else bbcp_Cfg.srcPath = PS_New;
              PS_Prv = PS_New; PS_Cur = PS_New->next;
             }
          if ((*cp = delim)) cp++;
@@ -845,7 +868,7 @@ int bbcp_FileSpec::Xfr_Fixup()
 
 // Inform the person we will try to complete the copy
 //
-   if (bbcp_Config.Options & bbcp_VERBOSE)
+   if (bbcp_Cfg.Options & bbcp_VERBOSE)
       bbcp_Fmsg("Xfr_Fixup", "Will try to complete copying",targpath);
    return 0;
 }

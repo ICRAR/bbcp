@@ -4,7 +4,8 @@
 /*                                                                            */
 /*                    b b c p _ N e t S o c k A d d r . h                     */
 /*                                                                            */
-/*(c) 2013-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*                            All Rights Reserved                             */
+/*(c) 2013-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*                            All Rights Reserved                             */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */

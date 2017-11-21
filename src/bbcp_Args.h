@@ -4,7 +4,8 @@
 /*                                                                            */
 /*                           b b c p _ A r g s . h                            */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -52,6 +53,7 @@ void  Options(char *opts, int argc, char **argv);
     ~bbcp_Args();
 
 char *argval;
+char *theOpt;
 
 private:
 
@@ -64,6 +66,7 @@ int              inStream;
 int              endopts;
 int              Argc;
 int              Aloc;
+char             optbuff[2];
 char           **Argv;
 bbcp_Stream      arg_stream;
 };

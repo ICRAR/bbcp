@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                        b b c p _ F S _ U n i x . C                         */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -33,6 +34,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <utime.h>
 #include <sys/param.h>
@@ -74,28 +76,35 @@ extern bbcp_System bbcp_OS;
   
 int bbcp_FS_Unix::Applicable(const char *path)
 {
+// Duplicate the path and only consider the first component (mount point)
+//
+   if (!fs_path)
+      {char *slash;
+       fs_path = strdup(path);
+       if ((slash = index(fs_path+1, '/'))) *slash = 0;
+      }
+
+// FREEBSD doesn't have a statvfs, so we punt
+//
 #ifdef FREEBSD
-   if (!fs_path) fs_path = strdup(path);
+   secSize = 512;
 #else
    struct statvfs buf;
 
 // To find out whether or not we are applicable, simply do a statvfs on the
 // incomming path. If we can do it, then we are a unix filesystem.
 //
-   if (statvfs(path, &buf)) return 0;
+   if (statvfs(fs_path, &buf)) return 0;
 
 // Set the sector size
 //
    secSize = buf.f_frsize;
 
-// Save the path to this filesystem if we don't have one. This is a real
-// kludgy short-cut since in bbcp we only have a single output destination.
+// Record the unique filesystem ID.
 //
-   if (!fs_path) 
-      {fs_path = strdup(path); 
-       memcpy((void *)&fs_id, (const void *)&buf.f_fsid, sizeof(fs_id));
-      }
+   memcpy((void *)&fs_id, (const void *)&buf.f_fsid, sizeof(fs_id));
 #endif
+
    return 1;
 }
 
@@ -181,9 +190,6 @@ long long bbcp_FS_Unix::getSize(int fd, long long *bsz)
 int bbcp_FS_Unix::MKDir(const char *path, mode_t mode)
 {
     if (mkdir(path, mode)) return -errno;
-
-    if (chmod(path, 0755)) return -errno;
-
     return 0;
 }
 

@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                           b b c p _ A r g s . C                            */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -28,14 +29,11 @@
 #include <stdlib.h>
 #include <strings.h>
 #include "bbcp_Args.h"
-#include "bbcp_Config.h"
 #include "bbcp_Headers.h"
 
 /******************************************************************************/
 /*                        G l o b a l   O b j e c t s                         */
 /******************************************************************************/
-
-extern bbcp_Config bbcp_Config;
 
 /******************************************************************************/
 /*                         L o c a l   C l a s s e s                          */
@@ -133,7 +131,13 @@ char *bbcp_Args::getarg(int newln)
   
 char bbcp_Args::getopt()
 {
-   char optval, optbuff[2] = {0,0}, *optspec, *arglist, *theOpt = optbuff;
+   char optval, *optspec, *arglist;
+
+// Do some required initialization
+//
+   optbuff[0] = 0;
+   optbuff[1] = 0;
+   theOpt = optbuff;
 
 // Check if we really have any more options
 //

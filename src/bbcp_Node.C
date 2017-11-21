@@ -3,7 +3,8 @@
 /*                           b b c p _ N o d e . C                            */
 /*                                                                            */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -46,7 +47,7 @@
 /*                      E x t e r n a l   O b j e c t s                       */
 /******************************************************************************/
   
-extern bbcp_Config   bbcp_Config;
+extern bbcp_Config   bbcp_Cfg;
 
 extern bbcp_BuffPool bbcp_APool;
 extern bbcp_BuffPool bbcp_BPool;
@@ -71,7 +72,7 @@ void *bbcp_doCX(void *pp)
 void *bbcp_doWrite(void *pp)
 {
      bbcp_File *fp = (bbcp_File *)pp;
-     long retc = fp->Write_All(bbcp_BPool, bbcp_Config.Streams);
+     long retc = fp->Write_All(bbcp_BPool, bbcp_Cfg.Streams);
      return (void *)retc;
 }
 void *bbcp_Buff2Net(void *link)
@@ -92,7 +93,7 @@ void *bbcp_Connect(void *protp)
      bbcp_Link     *link;
      int            retc;
 
-     if ((link = bbcp_Net.Connect(bbcp_Config.CBhost, bbcp_Config.CBport)))
+     if ((link = bbcp_Net.Connect(bbcp_Cfg.CBhost, bbcp_Cfg.CBport)))
         {if ((retc = protocol->Login(link, 0)) < 0)
             {delete link; link = 0;}
         }
@@ -132,7 +133,7 @@ int bbcp_Node::getBuffers(int isTrg, int isLZO)
 
 // Allocate the buffers
 //
-   return bbcp_BPool.Allocate(bbcp_Config.BNum, bbcp_Config.RWBsz, isTrg);
+   return bbcp_BPool.Allocate(bbcp_Cfg.BNum, bbcp_Cfg.RWBsz, isTrg);
 }
 
 /******************************************************************************/
@@ -164,7 +165,7 @@ int bbcp_Node::Put(char *data[], int dlen[])
        cerr <<endl;
       }
 
-   if (bbcp_Config.Options & bbcp_SRC) return NStream.Put(data, dlen);
+   if (bbcp_Cfg.Options & bbcp_SRC) return NStream.Put(data, dlen);
       else {int rc;
             putMutex.Lock();
             rc = NStream.Put(data, dlen);
@@ -187,8 +188,8 @@ int bbcp_Node::Run(char *user, char *host, char *prog, char *parg)
 // Free up any node name here
 //
    if (nodename) free(nodename);
-   nodename = strdup(host ? host : bbcp_Config.MyHost);
-   username = (user ? user : bbcp_Config.MyUser);
+   nodename = strdup(host ? host : bbcp_Cfg.MyHost);
+   username = (user ? user : bbcp_Cfg.MyUser);
 
 // Check for an IPV6 address as ssh does not follow the rfc standard
 //
@@ -201,7 +202,7 @@ int bbcp_Node::Run(char *user, char *host, char *prog, char *parg)
 
 // Break up the command line and perform substitutions
 //
-   if (!(user || host)) {Argv[0] = bbcp_Config.MyProg; numa = 1;}
+   if (!(user || host)) {Argv[0] = bbcp_Cfg.MyProg; numa = 1;}
       else for (numa = 0; *pp && numa < ArgvSize; numa++)
                {while(*pp && *pp == ' ') pp++;
                 ap = pp;
@@ -209,15 +210,15 @@ int bbcp_Node::Run(char *user, char *host, char *prog, char *parg)
                 if (*pp) {*pp = '\0'; pp++;}
                 if (*ap == '%' && !ap[2])
                    {     if (ap[1] == 'I')
-                            {if (bbcp_Config.IDfn)
+                            {if (bbcp_Cfg.IDfn)
                                 {Argv[numa++] = (char *)"-i";
-                                 Argv[numa] = bbcp_Config.IDfn;}
+                                 Argv[numa] = bbcp_Cfg.IDfn;}
                                 else numa--;
                             }
                     else if (ap[1] == 'U') Argv[numa] = username;
                     else if (ap[1] == 'H') Argv[numa] = sshDest;
                     else if (ap[1] == '4')
-                            {if (bbcp_Config.Options & bbcp_IPV4)
+                            {if (bbcp_Cfg.Options & bbcp_IPV4)
                                            Argv[numa] = ipv4;
                                 else numa--;
                             }
@@ -234,11 +235,11 @@ int bbcp_Node::Run(char *user, char *host, char *prog, char *parg)
 
 // Invoke the program
 //
-   if ((fderr=NStream.Exec(Argv, 1, bbcp_Config.MLog != 0)) < 0) return -fderr;
+   if ((fderr=NStream.Exec(Argv, 1, bbcp_Cfg.MLog != 0)) < 0) return -fderr;
 
 // Perform logging function here
 //
-   if (bbcp_Config.MLog) bbcp_Config.MLog->Monitor(fderr, parg);
+   if (bbcp_Cfg.MLog) bbcp_Cfg.MLog->Monitor(fderr, parg);
 
 // Perform debugging here
 //
@@ -264,7 +265,7 @@ void bbcp_Node::Stop(int Report)
 
 // If window reporting wanted do so only if very verbose and autotuning
 //
-   if (bbcp_Config.Options & bbcp_BLAB && bbcp_Net.AutoTune() && data_link[0])
+   if (bbcp_Cfg.Options & bbcp_BLAB && bbcp_Net.AutoTune() && data_link[0])
       chkWsz(data_link[0]->FD(), 1);
 
 // Kill any attached process
@@ -333,11 +334,11 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 
 // Perform Force or Append processing
 //
-        if (bbcp_Config.Options & bbcp_XPIPE)
+        if (bbcp_Cfg.Options & bbcp_XPIPE)
            {oflag = O_WRONLY;
-            Path = bbcp_Config.snkSpec->pathname;
-            Args = bbcp_Config.snkSpec->fileargs;
-            if (bbcp_Config.snkSpec->Info.Otype != 'p') Act = "running";
+            Path = bbcp_Cfg.snkSpec->pathname;
+            Args = bbcp_Cfg.snkSpec->fileargs;
+            if (bbcp_Cfg.snkSpec->Info.Otype != 'p') Act = "running";
                else {Mode |= S_IFIFO;
                      if (Args)
                         {bbcp_Fmsg("RecvFile",
@@ -346,12 +347,12 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
                         }
                     }
            }
-   else if (bbcp_Config.Options & bbcp_FORCE)
-           {if (!(bbcp_Config.Options & bbcp_NOUNLINK))
+   else if (bbcp_Cfg.Options & bbcp_FORCE)
+           {if (!(bbcp_Cfg.Options & bbcp_NOUNLINK))
                fp->FSys()->RM(Path);
             oflag = O_WRONLY | O_CREAT | O_TRUNC;
            }
-   else if (bbcp_Config.Options & bbcp_APPEND)
+   else if (bbcp_Cfg.Options & bbcp_APPEND)
            {if ((retc = fp->WriteSigFile())) return retc;
             if ((startoff = fp->targetsz)) oflag = O_WRONLY;
                else oflag = O_CREAT | O_WRONLY;
@@ -360,14 +361,14 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 
 // Establish mode, we normally make the file write-only
 //
-   if ( bbcp_Config.Options &  bbcp_RTCSNK
-   && !(bbcp_Config.Options & (bbcp_RTCHIDE|bbcp_XPIPE)))
-      Mode = bbcp_Config.Mode|S_IWUSR|S_ISUID;
+   if ( bbcp_Cfg.Options &  bbcp_RTCSNK
+   && !(bbcp_Cfg.Options & (bbcp_RTCHIDE|bbcp_XPIPE)))
+      Mode = bbcp_Cfg.Mode|S_IWUSR|S_ISUID;
 
 // Tell the user what we are bout to do
 //
-   if ((bbcp_Config.Options & bbcp_BLAB) | bbcp_Config.Progint)
-      if (bbcp_Config.Options & bbcp_APPEND) 
+   if ((bbcp_Cfg.Options & bbcp_BLAB) | bbcp_Cfg.Progint)
+      if (bbcp_Cfg.Options & bbcp_APPEND) 
          {char buff[32];
           sprintf(buff, "%lld", startoff);
           bbcp_Fmsg("RecvFile","Appending to",Path,"at offset",buff);
@@ -385,7 +386,7 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
        DEBUG("Waiting for child " <<Child[0] <<" to finish");
        retc = bbcp_OS.Waitpid(Child);
        Parent_Monitor.Stop();
-       if (bbcp_Config.Options & bbcp_BLAB)
+       if (bbcp_Cfg.Options & bbcp_BLAB)
           write(STDERR_FILENO, buff, Usage("Target", buff, sizeof(buff)));
        return retc;
       }
@@ -396,11 +397,11 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 
 // Set Concurrency
 //
-   bbcp_Thread_MT(bbcp_Config.MTLevel);
+   bbcp_Thread_MT(bbcp_Cfg.MTLevel);
 
 // Request direct I/O if so wanted
 //
-   if (bbcp_Config.Options & bbcp_ODIO) {fp->FSys()->DirectIO(1);
+   if (bbcp_Cfg.Options & bbcp_ODIO) {fp->FSys()->DirectIO(1);
        DEBUG("Direct output requested.");}
 
 // Open the file and set the starting offset
@@ -414,7 +415,7 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 
 // If compression is wanted, set up the compression objects
 //
-   if (bbcp_Config.Options & bbcp_COMPRESS 
+   if (bbcp_Cfg.Options & bbcp_COMPRESS 
    && !(cxp = setup_CX(0, outFile->ioFD()))) return -ECANCELED;
 
 // Start a thread for each data link we have
@@ -431,7 +432,7 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 
 // If we are compressing start the sequence thread now
 //
-   if (bbcp_Config.Options & bbcp_COMPRESS)
+   if (bbcp_Cfg.Options & bbcp_COMPRESS)
       {seqFile = new bbcp_File(Path, 0, 0);
        if ((retc = bbcp_Thread_Start(bbcp_doWrite, (void *)seqFile, &tid))<0)
           {bbcp_Emsg("RecvFile",retc,"starting disk thread for",Path);
@@ -447,21 +448,21 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 
 // If a periodic progress message is wanted, start a progress thread
 //
-   if (bbcp_Config.Progint) 
+   if (bbcp_Cfg.Progint) 
       {pmp = new bbcp_ProgMon();
-       pmp->Start(outFile, cxp, bbcp_Config.Progint, fp->Info.size-startoff);
+       pmp->Start(outFile, cxp, bbcp_Cfg.Progint, fp->Info.size-startoff);
       }
 
 // Write the whole file
 //
-   if (bbcp_Config.Options & bbcp_COMPRESS)
+   if (bbcp_Cfg.Options & bbcp_COMPRESS)
            retc = outFile->Write_All(bbcp_APool, 1);
-      else retc = outFile->Write_All(bbcp_BPool, bbcp_Config.Streams);
+      else retc = outFile->Write_All(bbcp_BPool, bbcp_Cfg.Streams);
    DEBUG("File write ended; rc=" <<retc);
 
 // Wait for the expansion thread to end
 //
-   if (bbcp_Config.Options & bbcp_COMPRESS)
+   if (bbcp_Cfg.Options & bbcp_COMPRESS)
       {if ((tretc = (long)bbcp_Thread_Wait(cxp->TID))) retc = 128;
        DEBUG("File expansion ended; rc=" <<tretc);
       }
@@ -489,7 +490,7 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
            bbcp_Emsg("RecvFile", retc, "finding", Path);
           }
           else if (Info.size != fp->Info.size && Info.mode
-               &&  !(bbcp_Config.Options & bbcp_NOFSZCHK))
+               &&  !(bbcp_Cfg.Options & bbcp_NOFSZCHK))
                   {const char *What = (Info.size < fp->Info.size
                                     ?  "Not all" : "Too much");
                    retc = 29;
@@ -501,7 +502,7 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 // Report detailed I/O stats, if so wanted
 //
    Elapsed_Timer.Stop();
-   if (!retc && bbcp_Config.Options & bbcp_VERBOSE)
+   if (!retc && bbcp_Cfg.Options & bbcp_VERBOSE)
       {double ttime;
        Elapsed_Timer.Report(ttime);
        Report(ttime, fp, outFile, cxp);
@@ -536,7 +537,7 @@ int bbcp_Node::SendFile(bbcp_FileSpec *fp)
 
 // Set open options (check for pipes)
 //
-   if (bbcp_Config.Options & bbcp_XPIPE)
+   if (bbcp_Cfg.Options & bbcp_XPIPE)
       {if (fp->Info.Otype == 'p') Mode = S_IFIFO;
           else Act = "running";
       }
@@ -551,7 +552,7 @@ int bbcp_Node::SendFile(bbcp_FileSpec *fp)
        Parent_Monitor.Start();
        retc = bbcp_OS.Waitpid(Child);
        Parent_Monitor.Stop();
-       if (bbcp_Config.Options & bbcp_BLAB)
+       if (bbcp_Cfg.Options & bbcp_BLAB)
           write(STDERR_FILENO, buff, Usage("Source", buff, sizeof(buff)));
        return retc;
       }
@@ -562,11 +563,11 @@ int bbcp_Node::SendFile(bbcp_FileSpec *fp)
 
 // Set Concurrency
 //
-   bbcp_Thread_MT(bbcp_Config.MTLevel);
+   bbcp_Thread_MT(bbcp_Cfg.MTLevel);
 
 // Request direct I/O if so wanted
 //
-   if (bbcp_Config.Options & bbcp_IDIO) {fp->FSys()->DirectIO(1);
+   if (bbcp_Cfg.Options & bbcp_IDIO) {fp->FSys()->DirectIO(1);
        DEBUG("Direct input requested.");}
 
 // Open the input file and set starting offset
@@ -580,7 +581,7 @@ int bbcp_Node::SendFile(bbcp_FileSpec *fp)
 
 // If compression is wanted, set up the compression objects
 //
-   if (bbcp_Config.Options & bbcp_COMPRESS 
+   if (bbcp_Cfg.Options & bbcp_COMPRESS 
    && !(cxp = setup_CX(1, inFile->ioFD()))) return -ECANCELED;
 
 // Start a thread for each data link we have
@@ -602,20 +603,20 @@ int bbcp_Node::SendFile(bbcp_FileSpec *fp)
 
 // Start the Transfer Time Limit
 //
-   if (bbcp_Config.TimeLimit)
+   if (bbcp_Cfg.TimeLimit)
       {TLimit = new bbcp_ProcMon();
-       TLimit->Start(bbcp_Config.TimeLimit, &bbcp_BPool);
+       TLimit->Start(bbcp_Cfg.TimeLimit, &bbcp_BPool);
       }
 
 // Read the whole file
 //
-   if (bbcp_Config.Options & bbcp_COMPRESS) retc=inFile->Read_All(bbcp_APool,1);
-      else retc = inFile->Read_All(bbcp_BPool, bbcp_Config.Bfact);
+   if (bbcp_Cfg.Options & bbcp_COMPRESS) retc=inFile->Read_All(bbcp_APool,1);
+      else retc = inFile->Read_All(bbcp_BPool, bbcp_Cfg.Bfact);
    DEBUG("File read ended; rc=" <<retc);
 
 // Wait for compression thread to end
 //
-   if (bbcp_Config.Options & bbcp_COMPRESS)
+   if (bbcp_Cfg.Options & bbcp_COMPRESS)
       {if ((tretc = (long)bbcp_Thread_Wait(cxp->TID))) retc = 128;
        DEBUG("File compression ended; rc=" <<tretc);
        delete cxp;
@@ -648,9 +649,9 @@ int bbcp_Node::SendFile(bbcp_FileSpec *fp)
   
 void bbcp_Node::chkWsz(int fd, int Final)
 {
-   int wbsz = bbcp_Net.getWBSize(fd, bbcp_Config.Options & bbcp_SRC);
-   const char *fmode = (bbcp_Config.Options & bbcp_SRC ? "send"   : "recv");
-   const char *smode = (bbcp_Config.Options & bbcp_SRC ? "Source" : "Target");
+   int wbsz = bbcp_Net.getWBSize(fd, bbcp_Cfg.Options & bbcp_SRC);
+   const char *fmode = (bbcp_Cfg.Options & bbcp_SRC ? "send"   : "recv");
+   const char *smode = (bbcp_Cfg.Options & bbcp_SRC ? "Source" : "Target");
    const char *Wtype;
    char mbuff[256];
    int n;
@@ -663,7 +664,7 @@ void bbcp_Node::chkWsz(int fd, int Final)
 // Issue message
 //
    n = sprintf(mbuff, "%s %s using %s %s window of %d\n",
-                      smode, bbcp_Config.MyHost, Wtype, fmode, wbsz);
+                      smode, bbcp_Cfg.MyHost, Wtype, fmode, wbsz);
    write(STDERR_FILENO, mbuff, n);
 }
 
@@ -685,7 +686,7 @@ int bbcp_Node::Incomming(bbcp_Protocol *protocol)
    if (minport || maxport
    || ((retc = bbcp_Net.Bind(BBCP_DFLTMINPORT, BBCP_DFLTMAXPORT, 1, -1)) < 0))
    if ((retc = bbcp_Net.Bind(minport, maxport,
-               bbcp_Config.bindtries, bbcp_Config.bindwait)) < 0)
+               bbcp_Cfg.bindtries, bbcp_Cfg.bindwait)) < 0)
       return retc;
 
 // Report the port number we have chosen
@@ -694,7 +695,7 @@ int bbcp_Node::Incomming(bbcp_Protocol *protocol)
 
 // Establish all of the connections
 //
-   while(dlcount < bbcp_Config.Streams)
+   while(dlcount < bbcp_Cfg.Streams)
        {if (!(link = bbcp_Net.Accept())) break;
         if (!(retc = protocol->Login(link, 1))) 
            {link->LinkNum = dlcount; data_link[dlcount++] = link;}
@@ -704,12 +705,12 @@ int bbcp_Node::Incomming(bbcp_Protocol *protocol)
 // Unbind the network and make sure we have all of the agreed upon links
 //
    bbcp_Net.unBind();
-   if (dlcount < bbcp_Config.Streams) return Recover("Accept");
+   if (dlcount < bbcp_Cfg.Streams) return Recover("Accept");
    iocount = dlcount;
 
 // Initialize the buddy pipeline; a patented way of ensuring maximum parallelism
 //
-   if (dlcount > 1 && (bbcp_Config.Options & (bbcp_SRC|bbcp_ORDER)))
+   if (dlcount > 1 && (bbcp_Cfg.Options & (bbcp_SRC|bbcp_ORDER)))
       {i = dlcount-1;
        data_link[i]->setBuddy(data_link[0]);
        while(i--) data_link[i]->setBuddy(data_link[i+1]);
@@ -718,7 +719,7 @@ int bbcp_Node::Incomming(bbcp_Protocol *protocol)
 
 // Determine what the actual window size is (only if verbose)
 //
-   if (bbcp_Config.Options & bbcp_BLAB) chkWsz(data_link[0]->FD());
+   if (bbcp_Cfg.Options & bbcp_BLAB) chkWsz(data_link[0]->FD());
    return 0;
 }
   
@@ -733,7 +734,7 @@ int bbcp_Node::Outgoing(bbcp_Protocol *protocol)
 
 // Establish the control connection first
 //
-   if ((link = bbcp_Net.Connect(bbcp_Config.CBhost, bbcp_Config.CBport, 3)))
+   if ((link = bbcp_Net.Connect(bbcp_Cfg.CBhost, bbcp_Cfg.CBport, 3)))
       if ((retc = protocol->Login(link, 0)) < 0)
          {delete link; link = 0;}
 
@@ -744,7 +745,7 @@ int bbcp_Node::Outgoing(bbcp_Protocol *protocol)
 
        // Start threads for data connections
        //
-       for (i = 0; i < bbcp_Config.Streams; i++)
+       for (i = 0; i < bbcp_Cfg.Streams; i++)
            {if ((retc=bbcp_Thread_Start(bbcp_Connect,(void *)protocol,&tid))<0)
                {bbcp_Emsg("Outgoing", retc, "starting connect thread");
                 _exit(100);
@@ -754,7 +755,7 @@ int bbcp_Node::Outgoing(bbcp_Protocol *protocol)
             usleep(1);
 #endif
            }
-       for (i = 0; i < bbcp_Config.Streams; i++)
+       for (i = 0; i < bbcp_Cfg.Streams; i++)
            {if (!(link = (bbcp_Link *)bbcp_Thread_Wait(T_id[i]))) break;
             link->LinkNum = dlcount; data_link[dlcount++] = link;
            }
@@ -763,15 +764,15 @@ int bbcp_Node::Outgoing(bbcp_Protocol *protocol)
 
 // Make sure we have all of the required links
 //
-   if (dlcount < bbcp_Config.Streams) return Recover("Connect");
+   if (dlcount < bbcp_Cfg.Streams) return Recover("Connect");
 
 // Determine what the actual window size is (only if verbose)
 //
-   if (bbcp_Config.Options & bbcp_BLAB) chkWsz(data_link[0]->FD());
+   if (bbcp_Cfg.Options & bbcp_BLAB) chkWsz(data_link[0]->FD());
 
 // Initialize the buddy pipeline; a patented way of ensuring maximum parallelism
 //
-   if (dlcount > 1 && (bbcp_Config.Options & (bbcp_SRC|bbcp_ORDER)))
+   if (dlcount > 1 && (bbcp_Cfg.Options & (bbcp_SRC|bbcp_ORDER)))
       {i = dlcount-1;
        data_link[i]->setBuddy(data_link[0]);
        while(i--) data_link[i]->setBuddy(data_link[i+1]);
@@ -787,7 +788,7 @@ int bbcp_Node::Outgoing(bbcp_Protocol *protocol)
 int bbcp_Node::Recover(const char *who)
 {
     char mbuff[256];
-    sprintf(mbuff, "%d of %d data streams.", dlcount, bbcp_Config.Streams);
+    sprintf(mbuff, "%d of %d data streams.", dlcount, bbcp_Cfg.Streams);
     bbcp_Fmsg(who, "Unable to allocate more than", mbuff);
     while(dlcount) data_link[--dlcount]->Close();
     return -1;
@@ -822,7 +823,7 @@ int n;
    n = sprintf(Line, "File %s created; %lld bytes at %.1f %sB/s%s\n",
                fp->targpath, xbytes, xrate, xType, buff);
    write(STDERR_FILENO, Line, n);
-   if (!(bbcp_Config.Options & bbcp_BLAB)) return;
+   if (!(bbcp_Cfg.Options & bbcp_BLAB)) return;
 
 // Tell user how many reorder events there were
 //
@@ -848,7 +849,7 @@ bbcp_ZCX *bbcp_Node::setup_CX(int deflating, int iofd)
       {ibp = &bbcp_APool;
        rbp = &bbcp_APool;
        obp = &bbcp_BPool;
-       clvl = (bbcp_Config.Complvl ? bbcp_Config.Complvl : 1);
+       clvl = (bbcp_Cfg.Complvl ? bbcp_Cfg.Complvl : 1);
       } else {
        ibp = &bbcp_CPool;
        rbp = &bbcp_BPool;
@@ -858,13 +859,13 @@ bbcp_ZCX *bbcp_Node::setup_CX(int deflating, int iofd)
 
 // Allocate buffers in the A pool
 //
-   if (bbcp_APool.Allocate(bbcp_Config.BNum, bbcp_Config.RWBsz, !deflating))
+   if (bbcp_APool.Allocate(bbcp_Cfg.BNum, bbcp_Cfg.RWBsz, !deflating))
       return 0;
 
 // Allocate a new compression/expansion object
 //
    cxp = new bbcp_ZCX(ibp, rbp, obp, clvl, iofd,
-             (int)(bbcp_Config.Options & (clvl ? bbcp_LOGCMP : bbcp_LOGEXP)));
+             (int)(bbcp_Cfg.Options & (clvl ? bbcp_LOGCMP : bbcp_LOGEXP)));
 
 // Start the compression/expansion thread
 //

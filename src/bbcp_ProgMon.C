@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                        b b c p _ P r o g M o n . C                         */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -40,7 +41,7 @@
 /*                      G l o b a l   V a r i a b l e s                       */
 /******************************************************************************/
 
-extern bbcp_Config   bbcp_Config;
+extern bbcp_Config   bbcp_Cfg;
 
 /******************************************************************************/
 /*           E x t e r n a l   I n t e r f a c e   R o u t i n e s            */
@@ -69,7 +70,7 @@ void bbcp_ProgMon::Monitor()
    bbcp_Timer    etime;
    char          buff[200], pbuff[24], tbuff[24], cxinfo[40], *cxip;
    const char    *xtXB, *xaXB;
-   int           bewordy = bbcp_Config.Options & bbcp_VERBOSE;
+   int           bewordy = bbcp_Cfg.Options & bbcp_VERBOSE;
 
 // Determine whether we need to report compression ratio (assume no percentages)
 //
@@ -104,7 +105,7 @@ void bbcp_ProgMon::Monitor()
        lasttime  = elptime;
        xtXB = bbcp_Config::Scale(xfrtime);
 
-       if (bbcp_Config.Logfn) *tbuff = 0;
+       if (bbcp_Cfg.Logfn) *tbuff = 0;
           else etime.Format(tbuff);
        if (bewordy)
           sprintf(buff, "bbcp: %s %s done; %.1f %sB/s, "

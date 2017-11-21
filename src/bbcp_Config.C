@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                         b b c p _ C o n f i g . C                          */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*               DE-AC02-76-SFO0515 with the Deprtment of Energy              */
 /*                                                                            */
@@ -84,7 +85,7 @@
 /*                        G l o b a l   O b j e c t s                         */
 /******************************************************************************/
 
-       bbcp_Config    bbcp_Config;
+       bbcp_Config    bbcp_Cfg;
 
        bbcp_Debug     bbcp_Debug;
 
@@ -135,6 +136,7 @@ bbcp_Config::bbcp_Config()
    bindtries = 1;
    bindwait  = 0;
    Options   = 0;
+   Option2   = 0;
    Mode      = (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) & ~uMask;
    ModeD     = 0;
    ModeDC    = (Mode   |S_IXUSR|S_IXGRP|S_IXOTH) & ~uMask;
@@ -352,7 +354,18 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
                  break;
        case 'o': Options |= bbcp_ORDER;
                  break;
-       case 'O': Options |= bbcp_OMIT;
+       case 'O':      if (!strcmp(arglist.theOpt,"O")
+                      ||  !strcmp(arglist.theOpt, "-omit-dups"))
+                         Options |= bbcp_OMIT;
+                 else if (!strcmp(arglist.theOpt, "-omit-ed")
+                      ||  !strcmp(arglist.theOpt, "-omit-emptydirs"))
+                         Option2 |= bbcp2_SKPEDIR;
+                 else if (!strcmp(arglist.theOpt, "-omit-ie")
+                      ||  !strcmp(arglist.theOpt, "-omit-inerrs"))
+                         Option2 |= bbcp2_SKPIERR;
+                 else if (!strcmp(arglist.theOpt, "-omit-oe")
+                      ||  !strcmp(arglist.theOpt, "-omit-outerrs"))
+                         Option2 |= bbcp2_SKPOERR;
                  break;
        case 'p': Options |= bbcp_PCOPY;
                  break;
@@ -644,7 +657,7 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
    if (!CKPdir && Options & bbcp_APPEND && Options & bbcp_SNK)
       {const char *ckpsfx = "/.bbcp";
        char *homedir = bbcp_OS.getHomeDir();
-       CKPdir = (char *)malloc(strlen(homedir) + sizeof(ckpsfx) + 1);
+       CKPdir = (char *)malloc(strlen(homedir) + strlen(ckpsfx) + 1);
        strcpy(CKPdir, homedir); strcat(CKPdir, ckpsfx);
        if (mkdir(CKPdir, 0755) && errno != EEXIST)
           {bbcp_Emsg("Config",errno,"creating restart directory",CKPdir);
@@ -680,6 +693,8 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
   
 void bbcp_Config::help(int rc)
 {
+chdir("/tmp");
+abort();
 H("Usage:   bbcp [Options] [Inspec] Outspec")
 I("Options: [-a [dir]] [-A] [-b [+]bf] [-B bsz] [-c [lvl]] [-C cfn] [-D] [-d path]")
 H("         [-e] [-E csa] [-f] [-F] [-g] [-h] [-i idfn] [-I slfn] [-k] [-K]")
@@ -979,6 +994,9 @@ void bbcp_Config::Config_Ctl(int rwbsz)
    if (Options & bbcp_XPIPE)    {Add_Opt('N'); Add_Str(upSpec);}
    if (Options & bbcp_ORDER)     Add_Opt('o');
    if (Options & bbcp_OMIT)      Add_Opt('O');
+   if (Option2 & bbcp2_SKPEDIR)  Add_Str("--omit-ed")
+   if (Option2 & bbcp2_SKPIERR)  Add_Str("--omit-ie")
+   if (Option2 & bbcp2_SKPOERR)  Add_Str("--omit-oe")
    if (Options & bbcp_PCOPY)     Add_Opt((Options & bbcp_PTONLY ? '~' : 'p'));
    if (Progint)                 {Add_Opt('P'); Add_Num(Progint);}
    if ((n = bbcp_Net.QoS()))    {Add_Opt('q'); Add_Num(n); }
@@ -1497,48 +1515,58 @@ void bbcp_Config::setOpts(bbcp_Args &Args)
      Args.Option("config",     6, 'C', ':');
      Args.Option("dirbase",    3, 'd', ':');
      Args.Option("debug",      5, 'D', 0);
-// e
+// e for -e (same as --checksum)
      Args.Option("checksum",   5, 'E', ':');
      Args.Option("force",      1, 'f', 0);
      Args.Option("nofschk",    4, 'F', ':');
-     Args.Option("gross",      1, 'g', 0);
+     Args.Option("gross",      1, 'g', 0); // deprecated and ignored
+// G is available
      Args.Option("help",       1, 'h', ':');
      Args.Option("idfile",     1, 'i', ':');
      Args.Option("infiles",    2, 'I', ':');
      Args.Option("ipv4",       4, '4', '.');
      Args.Option("keep",       1, 'k', 0);
-// K
+// K for -K
      Args.Option("license",    7, '$', 0);
      Args.Option("links",      4, '@', ':');  // synonym for --symlinks
      Args.Option("logfile",    1, 'l', ':');
-// L
+// L for -L
      Args.Option("mkdir",      3, 'A', 0);
      Args.Option("mode",       1, 'm', ':');
      Args.Option("nodns",      1, 'n', 0);
      Args.Option("pipe",       4, 'N', ':');
      Args.Option("order",      1, 'o', 0);
      Args.Option("omit",       4, 'O', 0);
+     Args.Option("omit-dups",  9, 'O', 0);
+     Args.Option("omit-ed",    7, 'O', 0);
+     Args.Option("omit-emptydirs", 11, 'O', 0);
+//   Args.Option("omit-ie",    7, 'O', 0);
+//   Args.Option("omit-inerrs",    11, 'O', 0);
+//   Args.Option("omit-oe",    7, 'O', 0);
+//   Args.Option("omit-outerrs",   12, 'O', 0);
      Args.Option("preserve",   1, 'p', 0);
      Args.Option("progress",   4, 'P', ':');
      Args.Option("ptime",      2, '~', 0);
      Args.Option("qos",        3, 'q', ':');
+// Q is available
      Args.Option("readable",   4, '+', 0);
      Args.Option("realtime",   4, 'R', ':');
      Args.Option("recursive",  1, 'r', 0);
      Args.Option("streams",    1, 's', ':');
      Args.Option("symlinks",   7, '@', ':'); // synonym for --links
-// S
+// S for -S
      Args.Option("timelimit",  1, 't', ':');
-// T
+// T for -T
      Args.Option("verbose",    1, 'v', 0);
      Args.Option("vverbose",   2, 'V', 0);
      Args.Option("version",    7, '#', 0);
      Args.Option("unbuffered", 1, 'u', ':');
-// U
+// U for -U
      Args.Option("windowsz",   1, 'w', ':');
      Args.Option("xfrrate",    1, 'x', ':');
-// Y
+// Y used for password
      Args.Option("sync",       4, 'y', 0);
+// X is available
      Args.Option("reverse",    3, 'z', 0);
      Args.Option("port",       4, 'Z', ':');
 }

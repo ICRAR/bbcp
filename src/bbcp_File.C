@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                           b b c p _ F i l e . C                            */
 /*                                                                            */
-/*(c) 2002-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    *//*                            All Rights Reserved                             */
+/*(c) 2002-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -74,7 +75,7 @@ extern bbcp_BuffPool bbcp_BPool;
 
 extern bbcp_BuffPool bbcp_CPool;
 
-extern bbcp_Config   bbcp_Config;
+extern bbcp_Config   bbcp_Cfg;
 
 extern bbcp_RTCopy   bbcp_RTCopy;
  
@@ -100,7 +101,7 @@ void *bbcp_FileCSX(void *pp)
 
 // Send checksum to the target if so needed
 //
-   if ((bbcp_Config.csOpts & bbcp_csSend) && bP && bP->boff >= 0)
+   if ((bbcp_Cfg.csOpts & bbcp_csSend) && bP && bP->boff >= 0)
       {bP->blen = -BBCP_CLCKS;
        memcpy(bP->bHdr.cksm, csP->csObj->csCurr(), csLen);
       }
@@ -138,7 +139,7 @@ bbcp_File::bbcp_File(const char *path, bbcp_IO *iox,
    bufreorders = 0;
    maxreorders = 0;
    PaceTime    = 0;
-   rtCopy      = (bbcp_Config.Options & bbcp_RTCSRC ? 1 : 0);
+   rtCopy      = (bbcp_Cfg.Options & bbcp_RTCSRC ? 1 : 0);
 }
 
 /******************************************************************************/
@@ -178,7 +179,7 @@ int bbcp_File::Passthru(bbcp_BuffPool *iBP, bbcp_BuffPool *oBP,
     bbcp_ChkSum *csObj;
     long long Offset = nextoffset;
     int csLen, csVer, numadd, maxbufs, maxadds = nstrms;
-    int rc = 0, unordered = !(bbcp_Config.Options & bbcp_ORDER);
+    int rc = 0, unordered = !(bbcp_Cfg.Options & bbcp_ORDER);
 
 // Determine if we will be piggy-backing checksumming here
 //
@@ -300,9 +301,9 @@ int bbcp_File::Read_All(bbcp_BuffPool &inPool, int Vn)
 // Set up checksumming. We would prefer to do this in the calling thread but
 // this is easier. One day we will generalize buffer piping.
 //
-   if (bbcp_Config.csOpts & bbcp_csVerIn)
-      {csP = new bbcp_FileChkSum(&inPool, this, bbcp_Config.csType,
-                                 bbcp_Config.csOpts & bbcp_csVerIO);
+   if (bbcp_Cfg.csOpts & bbcp_csVerIn)
+      {csP = new bbcp_FileChkSum(&inPool, this, bbcp_Cfg.csType,
+                                 bbcp_Cfg.csOpts & bbcp_csVerIO);
        if ((rc = bbcp_Thread_Start(bbcp_FileCSX, (void *)csP, &tid)) < 0)
            {bbcp_Emsg("File", rc, "starting file checksum thread.");
             delete csP;
@@ -314,12 +315,12 @@ int bbcp_File::Read_All(bbcp_BuffPool &inPool, int Vn)
 
 // Establish logging options
 //
-   if (bbcp_Config.Options & bbcp_LOGRD) IOB->Log("DISK", 0);
+   if (bbcp_Cfg.Options & bbcp_LOGRD) IOB->Log("DISK", 0);
 
 // Determine what kind of reading we will do here and do it
 //
 // cerr <<"BLOCKSIZE " <<blockSize <<endl;
-        if (bbcp_Config.Options & bbcp_XPIPE)
+        if (bbcp_Cfg.Options & bbcp_XPIPE)
                         rc = Read_Pipe  (&inPool, outPool);
    else if (blockSize ) rc = Read_Direct(&inPool, outPool);
    else rc = (Vn > 1       ? Read_Vector(&inPool, outPool, Vn)
@@ -332,7 +333,7 @@ int bbcp_File::Read_All(bbcp_BuffPool &inPool, int Vn)
 // Check if we ended because with an error
 //
    if (rc && rc != -ENOBUFS)
-      {const char *Act=(bbcp_Config.Options & bbcp_XPIPE ? "piping":"writing");
+      {const char *Act=(bbcp_Cfg.Options & bbcp_XPIPE ? "piping":"writing");
        bbcp_Emsg("Read", -rc, Act, iofn);
       }
 
@@ -354,10 +355,10 @@ int bbcp_File::Read_All(bbcp_BuffPool &inPool, int Vn)
    if (csP)
       {csP->csPool.putFullBuff(bP);
        bbcp_Thread_Wait(tid);
-       if (!rc && *bbcp_Config.csString)
+       if (!rc && *bbcp_Cfg.csString)
           {char *csTxt, *csVal = csP->csObj->Final(&csTxt);
-           if (memcmp(csVal, bbcp_Config.csValue, csP->csObj->csSize()))
-              {bbcp_Fmsg("Read", iofn, "source checksum", bbcp_Config.csString,
+           if (memcmp(csVal, bbcp_Cfg.csValue, csP->csObj->csSize()))
+              {bbcp_Fmsg("Read", iofn, "source checksum", bbcp_Cfg.csString,
                          "does not match", csTxt);
                rc = EILSEQ;
               } else {DEBUG(csP->csObj->Type() <<": " <<csTxt <<' ' <<iofn);}
@@ -383,7 +384,7 @@ int bbcp_File::Read_Direct(bbcp_BuffPool *iBP, bbcp_BuffPool *oBP)
 
 // Initialize transfer rate limiting if so desired
 //
-   if (bbcp_Config.Xrate) Read_Wait(rdsz);
+   if (bbcp_Cfg.Xrate) Read_Wait(rdsz);
 
 // Simply read one buffer at a time, that's the fastest way to do this
 //
@@ -438,7 +439,7 @@ int bbcp_File::Read_Normal(bbcp_BuffPool *iBP, bbcp_BuffPool *oBP)
 
 // Initialize transfer rate limiting if so desired
 //
-   if (bbcp_Config.Xrate) Read_Wait(rdsz);
+   if (bbcp_Cfg.Xrate) Read_Wait(rdsz);
 
 // Simply read one buffer at a time, that's the fastest way to do this
 //
@@ -489,7 +490,7 @@ int bbcp_File::Read_Pipe(bbcp_BuffPool *iBP, bbcp_BuffPool *oBP)
 
 // Initialize transfer rate limiting if so desired
 //
-   if (bbcp_Config.Xrate) Read_Wait(rdsz);
+   if (bbcp_Cfg.Xrate) Read_Wait(rdsz);
 
 // Simply read one buffer at a time, that's the fastest way to do this
 //
@@ -534,7 +535,7 @@ int bbcp_File::Read_Vector(bbcp_BuffPool *iBP, bbcp_BuffPool *oBP, int vNum)
 
 // Initialize transfer rate limiting if so desired
 //
-   if (bbcp_Config.Xrate) Read_Wait(rdsz*numV);
+   if (bbcp_Cfg.Xrate) Read_Wait(rdsz*numV);
 
 // Simply read one buffer at a time, that's the fastest way to do this
 //
@@ -594,11 +595,11 @@ void bbcp_File::Read_Wait(int rdsz)
 // Calculate number of micro seconds each read should take to achive the
 // desired transfer rate. This may cause us to not limit the transfer at all.
 //
-   nBlk = static_cast<double>(bbcp_Config.Xrate)
+   nBlk = static_cast<double>(bbcp_Cfg.Xrate)
         / static_cast<double>(rdsz);
    PaceTime = static_cast<long long>(usPerSec / nBlk);
    DEBUG("Pacing " <<rdsz <<" * " <<nBlk <<" @ " <<PaceTime <<"us = "
-         <<bbcp_Config.Xrate <<"/sec");
+         <<bbcp_Cfg.Xrate <<"/sec");
    Ticker.Reset();
 }
 
@@ -629,24 +630,24 @@ int bbcp_File::verChkSum(bbcp_FileChkSum *csP)
 
 // Check if we should verify this against a known value
 //
-   if (bbcp_Config.csOpts & bbcp_csVerOut)
+   if (bbcp_Cfg.csOpts & bbcp_csVerOut)
       {int   csLen         = csP->csObj->csSize();
        char *csTxt, *csVal = csP->csObj->Final(&csTxt);
-       if (*bbcp_Config.csString)
-          {if (memcmp(csVal, bbcp_Config.csValue, csP->csObj->csSize()))
-              {bbcp_Fmsg("Write", iofn, "target checksum", bbcp_Config.csString,
+       if (*bbcp_Cfg.csString)
+          {if (memcmp(csVal, bbcp_Cfg.csValue, csP->csObj->csSize()))
+              {bbcp_Fmsg("Write", iofn, "target checksum", bbcp_Cfg.csString,
                          "does not match", csTxt);
                return -EILSEQ;
               }
           } else {
-           memcpy(bbcp_Config.csValue, csVal, csLen);
-           strcpy(bbcp_Config.csString, csTxt);
+           memcpy(bbcp_Cfg.csValue, csVal, csLen);
+           strcpy(bbcp_Cfg.csString, csTxt);
           }
       }
 
 // All done
 //
-   DEBUG(csP->csObj->Type() <<": '" <<bbcp_Config.csString <<"' " <<iofn);
+   DEBUG(csP->csObj->Type() <<": '" <<bbcp_Cfg.csString <<"' " <<iofn);
    return 0;
 }
 
@@ -668,10 +669,10 @@ int bbcp_File::Write_All(bbcp_BuffPool &inPool, int nstrms)
 // Establish checksum options as well as ordering options. Note that we do
 // not support checksums in unordered streams and should have been prohibited.
 //
-   csType = bbcp_Config.csOpts & bbcp_csVerOut ? bbcp_Config.csType:bbcp_csNOP;
-   if (bbcp_Config.csOpts & bbcp_csVerOut || bbcp_Config.Options & bbcp_ORDER)
+   csType = bbcp_Cfg.csOpts & bbcp_csVerOut ? bbcp_Cfg.csType:bbcp_csNOP;
+   if (bbcp_Cfg.csOpts & bbcp_csVerOut || bbcp_Cfg.Options & bbcp_ORDER)
       {csP = new bbcp_FileChkSum(&inPool, this, csType,
-                                 bbcp_Config.csOpts & bbcp_csVerIO,nstrms);
+                                 bbcp_Cfg.csOpts & bbcp_csVerIO,nstrms);
        nstrms = 1;
        if ((rc = bbcp_Thread_Start(bbcp_FileCSY, (void *)csP, &tid)) < 0)
            {bbcp_Emsg("File", rc, "starting file checksum thread.");
@@ -683,7 +684,7 @@ int bbcp_File::Write_All(bbcp_BuffPool &inPool, int nstrms)
 
 // Establish logging options
 //
-   if (bbcp_Config.Options & bbcp_LOGRD) IOB->Log(0, "DISK");
+   if (bbcp_Cfg.Options & bbcp_LOGRD) IOB->Log(0, "DISK");
 
 // Determine what kind of writing we will do here and do it
 //
@@ -693,7 +694,7 @@ int bbcp_File::Write_All(bbcp_BuffPool &inPool, int nstrms)
 // Check if we ended because of an error or end of file
 //
    if (rc < 0 && rc != -ENOBUFS)
-      {const char *Act=(bbcp_Config.Options & bbcp_XPIPE ? "piping":"writing");
+      {const char *Act=(bbcp_Cfg.Options & bbcp_XPIPE ? "piping":"writing");
        bbcp_Emsg("Write", -rc, Act, iofn);
        inPool.Abort();
       }
@@ -708,13 +709,13 @@ int bbcp_File::Write_All(bbcp_BuffPool &inPool, int nstrms)
 
 // If checksums are being printed, send off ours if we have it
 //
-   if (bbcp_Config.csOpts & bbcp_csPrint && *bbcp_Config.csString)
-      cout <<"200 cks: " <<bbcp_Config.csString <<' ' <<iofn <<endl;
+   if (bbcp_Cfg.csOpts & bbcp_csPrint && *bbcp_Cfg.csString)
+      cout <<"200 cks: " <<bbcp_Cfg.csString <<' ' <<iofn <<endl;
 
 // Check if we should fsync this file
 //
-   if (!rc && IOB && (bbcp_Config.Options & bbcp_FSYNC)
-   && (rc = FSp->Fsync((bbcp_Config.Options & bbcp_DSYNC ? iofn:0),IOB->FD())))
+   if (!rc && IOB && (bbcp_Cfg.Options & bbcp_FSYNC)
+   && (rc = FSp->Fsync((bbcp_Cfg.Options & bbcp_DSYNC ? iofn:0),IOB->FD())))
       bbcp_Emsg("Write", -rc, "synchronizing", iofn);
 
 // Close the output file and make sure it's ok

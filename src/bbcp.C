@@ -2,7 +2,8 @@
 /*                                                                            */
 /*                                b b c p . C                                 */
 /*                                                                            */
-/*(c) 2010-14 by the Board of Trustees of the Leland Stanford, Jr., University*//*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
+/*(c) 2010-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
+/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
 /*   Produced by Andrew Hanushevsky for Stanford University under contract    */
 /*              DE-AC02-76-SFO0515 with the Department of Energy              */
 /*                                                                            */
@@ -65,7 +66,7 @@
 /*                      G l o b a l   V a r i a b l e s                       */
 /******************************************************************************/
 
-extern bbcp_Config   bbcp_Config;
+extern bbcp_Config   bbcp_Cfg;
 
 extern bbcp_BuffPool bbcp_BuffPool;
   
@@ -90,20 +91,20 @@ int main(int argc, char *argv[], char *envp[])
 // Process configuration file
 //
    bbcp_OS.EnvP = envp;
-   if (bbcp_Config.ConfigInit(argc, argv)) exit(1);
+   if (bbcp_Cfg.ConfigInit(argc, argv)) exit(1);
 
 // Process the arguments
 //
-   bbcp_Config.Arguments(argc, argv);
+   bbcp_Cfg.Arguments(argc, argv);
 
 // Process final source/sink actions here
 //
-   if (bbcp_Config.Options & (bbcp_SRC | bbcp_SNK))
+   if (bbcp_Cfg.Options & (bbcp_SRC | bbcp_SNK))
       {int retc;
        bbcp_ProcMon theAgent;
        theAgent.Start(bbcp_OS.getGrandP());
            {bbcp_Node     SS_Node;
-            retc = (bbcp_Config.Options & bbcp_SRC
+            retc = (bbcp_Cfg.Options & bbcp_SRC
                  ?  Protocol.Process(&SS_Node)
                  :  Protocol.Request(&SS_Node));
            }
@@ -113,46 +114,46 @@ int main(int argc, char *argv[], char *envp[])
 // Do some debugging here
 //
    Elapsed_Timer.Start();
-   if (bbcp_Debug.Trace > 2) bbcp_Config.Display();
+   if (bbcp_Debug.Trace > 2) bbcp_Cfg.Display();
 
 // Allocate the source and sink node and common protocol
 //
    Source = new bbcp_Node;
    Sink   = new bbcp_Node;
-   tfs    = bbcp_Config.snkSpec;
+   tfs    = bbcp_Cfg.snkSpec;
 
 // Allocate the log file
 //
-   if (bbcp_Config.Logfn)
-      {bbcp_Config.MLog = new bbcp_LogFile();
-       if (bbcp_Config.MLog->Open(bbcp_Config.Logfn)) exit(5);
+   if (bbcp_Cfg.Logfn)
+      {bbcp_Cfg.MLog = new bbcp_LogFile();
+       if (bbcp_Cfg.MLog->Open(bbcp_Cfg.Logfn)) exit(5);
       }
 
 // Grab all source files for each particular user/host and copy them
 //
    retc = 0;
-   while(!retc && (psp = bbcp_Config.srcSpec))
+   while(!retc && (psp = bbcp_Cfg.srcSpec))
       {fsp = psp->next;
        while(fsp && Same(fsp->username, psp->username)
              && Same(fsp->hostname, psp->hostname)) 
             {psp = fsp; fsp = fsp->next;}
        psp->next = 0;
-       sfs = bbcp_Config.srcSpec;
-       bbcp_Config.srcSpec = fsp;
-         if (bbcp_Config.Options & bbcp_CON2SRC)
+       sfs = bbcp_Cfg.srcSpec;
+       bbcp_Cfg.srcSpec = fsp;
+         if (bbcp_Cfg.Options & bbcp_CON2SRC)
             retc = Protocol.Schedule(Source, sfs, 
-                                     (char *)bbcp_Config.SrcXeq,
-                                     (char *)bbcp_Config.SrcArg,
+                                     (char *)bbcp_Cfg.SrcXeq,
+                                     (char *)bbcp_Cfg.SrcArg,
                                      Sink,   tfs,
-                                     (char *)bbcp_Config.SnkXeq,
-                                     (char *)bbcp_Config.SnkArg, Sink);
+                                     (char *)bbcp_Cfg.SnkXeq,
+                                     (char *)bbcp_Cfg.SnkArg, Sink);
             else
             retc = Protocol.Schedule(Sink,   tfs,
-                                     (char *)bbcp_Config.SnkXeq,
-                                     (char *)bbcp_Config.SnkArg,
+                                     (char *)bbcp_Cfg.SnkXeq,
+                                     (char *)bbcp_Cfg.SnkArg,
                                      Source, sfs,
-                                     (char *)bbcp_Config.SrcXeq,
-                                     (char *)bbcp_Config.SrcArg, Sink);
+                                     (char *)bbcp_Cfg.SrcXeq,
+                                     (char *)bbcp_Cfg.SrcArg, Sink);
        TotFiles += Sink->TotFiles;
        TotBytes += Sink->TotBytes;
       }
@@ -165,7 +166,7 @@ int main(int argc, char *argv[], char *envp[])
 // Report final statistics if wanted
 //
    DEBUG("Ending; rc=" <<retc <<" files=" <<TotFiles <<" bytes=" <<TotBytes);
-   if (bbcp_Config.Options & bbcp_VERBOSE
+   if (bbcp_Cfg.Options & bbcp_VERBOSE
    && !retc && TotFiles && TotBytes)
       {double ttime;
        char buff[128];
@@ -176,6 +177,6 @@ int main(int argc, char *argv[], char *envp[])
        cerr <<TotFiles <<(TotFiles != 1 ? " files" : " file");
        cerr <<" copied at effectively " <<buff <<endl;
       }
-   if (bbcp_Config.MLog) delete bbcp_Config.MLog;
+   if (bbcp_Cfg.MLog) delete bbcp_Cfg.MLog;
    exit(retc);
 }
