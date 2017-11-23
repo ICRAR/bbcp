@@ -694,7 +694,6 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
 void bbcp_Config::help(int rc)
 {
 chdir("/tmp");
-abort();
 H("Usage:   bbcp [Options] [Inspec] Outspec")
 I("Options: [-a [dir]] [-A] [-b [+]bf] [-B bsz] [-c [lvl]] [-C cfn] [-D] [-d path]")
 H("         [-e] [-E csa] [-f] [-F] [-g] [-h] [-i idfn] [-I slfn] [-k] [-K]")
