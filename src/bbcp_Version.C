@@ -48,9 +48,10 @@ extern bbcp_Config  bbcp_Cfg;
   
 bbcp_Version::bbcp_Version()
 {
-Copyright = "(c) 2002-2015 by the Board of Trustees of the Leland Stanford, Jr., University";
+Copyright = "(c) 2002-2017 by the Board of Trustees of the Leland Stanford, Jr., University";
 Author    = "Andrew Hanushevsky";
-Version   = "Version: 17.01";
+//                    12345678901
+Version   = "Version: 17.12.00.00.0";
 //           0123456789
 VData     = Version+9;
 };
