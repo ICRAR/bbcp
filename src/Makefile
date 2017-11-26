@@ -158,7 +158,7 @@ TARGET  = $(BINDIR)/bbcp
 
 
 all:
-	@make `uname` OSVER=`../MakeSname` RELEASE=`../MakeSname -r`
+	@+make `uname` OSVER=`../MakeSname` RELEASE=`../MakeSname -r`
 	@echo Make done.
 
 doitall: $(TARGET)
@@ -195,12 +195,12 @@ FreeBSD:
 	LIBS="$(BSDLIBS)"
 
 Linux:
-	@make makeLinux`/bin/uname -m` \
+	@+make makeLinux`/bin/uname -i` \
 	MD5HEADER=bbcp_MD5_openssl.h \
 	OBJMD5="$(OBJDIR)/bbcp_MD5_openssl.o"
 
 makeLinuxi386:
-	@make $(MKPARMS)  \
+	@+make $(MKPARMS)  \
 	CC=$(LNXCC) \
 	BB=$(LNXcc) \
 	CFLAGS="$(ENVCFLAGS) $(LNXOPT)" \
@@ -208,17 +208,8 @@ makeLinuxi386:
 	INCLUDE="$(ENVINCLUDE)" \
 	LIBS="$(LNXLIBS32)"
 
-makeLinuxi686:
-	@make $(MKPARMS)  \
-	CC=$(LNXCC) \
-	BB=$(LNXcc) \
-	CFLAGS="$(ENVCFLAGS) $(LNXOPT)" \
-	BFLAGS="$(ENVCFLAGS) $(LNXOPT_B)" \
-	INCLUDE="$(ENVINCLUDE)" \
-	LIBS="$(LNXLIBS32)"
-
-makeLinuxx86_64:
-	@make $(MKPARMS) RR=$(RELNUM) \
+makeLinuxx86_64 makeLinuxaarch64:
+	@+make $(MKPARMS) RR=$(RELNUM) \
 	CC=$(LNXCC) \
 	BB=$(LNXcc) \
 	CFLAGS="$(ENVCFLAGS) $(LNXOPT)" \
