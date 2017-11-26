@@ -691,7 +691,6 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
 void bbcp_Config::help(int rc)
 {
 chdir("/tmp");
-abort();
 H("Usage:   bbcp [Options] [Inspec] Outspec")
 I("Options: [-a [dir]] [-A] [-b [+]bf] [-B bsz] [-c [lvl]] [-C cfn] [-D] [-d path]")
 H("         [-e] [-E csa] [-f] [-F] [-g] [-h] [-i idfn] [-I slfn] [-k] [-K]")
@@ -713,7 +712,7 @@ H("-d path requests relative source path addressing and target path creation.")
 H("-D      turns on debugging.")
 H("-e      error check data for transmission errors using md5 checksum.")
 H("-E csa  specify checksum alorithm and optionally report or verify checksum.")
-H("        csa: [%]{a32|c32|md5}[=[<value> | <outfile>]]")
+H("        csa: [%]{a32|c32|md5|c32z|c32c}[=[<value> | <outfile>]]")
 H("-f      forces the copy by first unlinking the target file before copying.")
 H("-F      does not check to see if there is enough space on the target node.")
 H("-h      print help information.")
@@ -1282,9 +1281,11 @@ int bbcp_Config::EOpts(char *opts)
    csLen = strlen(opts);
    if (csLen >= (int)sizeof(csName)) *csName = 0;
       else strcpy(csName, opts);
-        if (!strcmp("a32", csName)) {csType = bbcp_csA32; csSize =  4;}
-   else if (!strcmp("c32", csName)) {csType = bbcp_csC32; csSize =  4;}
-   else if (!strcmp("md5", csName)) {csType = bbcp_csMD5; csSize = 16;}
+        if (!strcmp("a32", csName))  {csType = bbcp_csA32;  csSize =  4;}
+   else if (!strcmp("c32", csName))  {csType = bbcp_csC32;  csSize =  4;}
+   else if (!strcmp("c32z", csName)) {csType = bbcp_csC32Z; csSize =  4;}
+   else if (!strcmp("c32c", csName)) {csType = bbcp_csC32C; csSize =  4;}
+   else if (!strcmp("md5", csName))  {csType = bbcp_csMD5;  csSize = 16;}
    else {bbcp_Fmsg("Config", "Invalid checksum type -", opts); return -1;}
 
 // Verify the checksum value if one was actually specified

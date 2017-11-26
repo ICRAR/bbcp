@@ -944,7 +944,7 @@ void bbcp_Protocol::putCSV(char *Host, char *csFn, char *csVal, int csVsz)
 {                                //1234567890123
    struct iovec iov[] = {{(char *)"Checksum: ", 10},
                         {bbcp_Cfg.csName,strlen(bbcp_Cfg.csName)},
-                        {(char *)" ", 1}, {csVal, csVsz},
+                        {(char *)" ", 1}, {csVal, static_cast<std::size_t>(csVsz)},
                         {(char *)" ", 1}, {Host, strlen(Host)},
                         {(char *)":", 1}, {csFn, strlen(csFn)},
                         {(char *)"\n",1}};

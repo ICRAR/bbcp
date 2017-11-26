@@ -1,13 +1,15 @@
-#ifndef __BBCP_C32_H__
-#define __BBCP_C32_H__
+#ifndef __BBCP_C32C_H__
+#define __BBCP_C32C_H__
 /******************************************************************************/
 /*                                                                            */
-/*                            b b c p _ C 3 2 . h                             */
+/*                            b b c p _ C 3 2 C . h                           */
 /*                                                                            */
-/*(c) 2010-17 by the Board of Trustees of the Leland Stanford, Jr., University*/
-/*      All Rights Reserved. See bbcp_Version.C for complete License Terms    */
-/*   Produced by Andrew Hanushevsky for Stanford University under contract    */
-/*              DE-AC02-76-SFO0515 with the Department of Energy              */
+/*   ICRAR - International Centre for Radio Astronomy Research                */
+/*   (c) UWA - The University of Western Australia, 2016                      */
+/*   Copyright by UWA (in the framework of the ICRAR)                         */
+/*   All rights reserved                                                      */
+/*                                                                            */
+/*   Produced by Rodrigo Tobar based on bbcp_C32.h                            */
 /*                                                                            */
 /* bbcp is free software: you can redistribute it and/or modify it under      */
 /* the terms of the GNU Lesser General Public License as published by the     */
@@ -36,17 +38,28 @@
 #include "bbcp_ChkSum.h"
 #include "bbcp_Endian.h"
 
+
+/* Try to guess if we have an Intel CPU */
+#if defined __X86__ || defined __i386__ || defined i386 || defined _M_IX86 || defined __386__ || defined __x86_64__ || defined _M_X64
+#define HAS_INTEL_CPU 1
+#else
+#define HAS_INTEL_CPU 0
+#endif
+
+
 typedef unsigned int uint32;
   
-class bbcp_C32 : public bbcp_ChkSum
+class bbcp_C32C : public bbcp_ChkSum
 {
 public:
 
-void  Init() {C32Result = CRC32_XINIT; TotLen = 0; has_final = false; }
+void  Init();
 
 void  Update(const char *Buff, int BLen);
 
-int   csSize() {return sizeof(C32Result);}
+int csSize() {
+	return sizeof(C32Result);
+}
 
 
 char *csCurr(char **Text=0) {
@@ -70,12 +83,7 @@ uint finish(char **Text)
                 long long tLcs = TotLen;
                 int i = 0;
                 has_final = true;
-                uint crc = C32Result;
-                if (tLcs)
-                   {while(tLcs) {buff[i++] = tLcs & 0xff ; tLcs >>= 8;}
-                    crc = do_crc(crc, buff, i);
-                   }
-                crc = crc ^ CRC32_XOROT;
+                uint crc = ~C32Result;
 #ifndef BBCP_BIG_ENDIAN
                 crc = htonl(crc);
 #endif
@@ -84,19 +92,21 @@ uint finish(char **Text)
                }
 
 public:
-const char *Type() {return "c32";}
+const char *Type() {return "c32c";}
 
-            bbcp_C32() {Init();}
-virtual    ~bbcp_C32() {}
+            bbcp_C32C() {Init();}
+virtual    ~bbcp_C32C() {}
 
 private:
-static const uint CRC32_XINIT = 0;
-static const uint CRC32_XOROT = 0xffffffff;
+static const uint CRC32_XINIT = 0xffffffff;
 static       uint crctable[256];
              uint C32Result;
        long  long TotLen;
          uint32_t tmpcrc;
              bool has_final;
+#if HAS_INTEL_CPU
+             bool has_hw_crc32c;
+#endif
 
              uint do_crc(uint crc, const char *p, int reclen);
 
