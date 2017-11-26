@@ -235,7 +235,10 @@ bbcp_Config::~bbcp_Config()
 #define Cat_Oct(x) {            cbp=n2a(x,&cbp[0],"%o");}
 #define Add_Str(x) {cbp[0]=' '; strcpy(&cbp[1], x); cbp+=strlen(x)+1;}
 
-#define bbcp_VALIDOPTS (char *)"-a.AB:b:C:c.d:DeE:fFghi:I:kKl:L:m:nN:oOpP:q:rR.s:S:t:T:u:U:vVw:W:x:y:zZ:4.~@:$#+"
+#define bbcp_VALIDOPT1 (char *)"-a.AB:b:C:c.d:DeE:fFghi:I:kKl:L:m:nN:oOp"
+#define bbcp_VALIDOPT2         "P:q:rR.s:S:t:T:u:U:vVw:W:x:y:zZ:4.~@:$#+"
+#define bbcp_VALIDOPT3         "=<>"
+#define bbcp_VALIDOPTS bbcp_VALIDOPT1 bbcp_VALIDOPT2 bbcp_VALIDOPT3
 #define bbcp_SSOPTIONS bbcp_VALIDOPTS "MH:Y:"
 
 #define Hmsg1(a)   {bbcp_Fmsg("Config", a);    help(1);}
@@ -256,6 +259,9 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
 //
    if (argc < 2) Hmsg1("Copy arguments not specified.");
    notctl = (Options & (bbcp_SRC | bbcp_SNK));
+//DEBUG
+// if (Options & bbcp_SRC) bbcp_HostName = "SRC";
+// if (Options & bbcp_SNK) bbcp_HostName = "SNK";
 
 // Establish valid options and the source of those options
 //
@@ -312,7 +318,7 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
                  break;
        case 'F': Options |= bbcp_NOSPCHK;
                  break;
-       case 'g': Options |= bbcp_GROSS;
+       case 'g': // No longer needed so w ignore it for backward compatability
                  break;
        case 'h': help(0);
                  break;
@@ -354,18 +360,7 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
                  break;
        case 'o': Options |= bbcp_ORDER;
                  break;
-       case 'O':      if (!strcmp(arglist.theOpt,"O")
-                      ||  !strcmp(arglist.theOpt, "-omit-dups"))
-                         Options |= bbcp_OMIT;
-                 else if (!strcmp(arglist.theOpt, "-omit-ed")
-                      ||  !strcmp(arglist.theOpt, "-omit-emptydirs"))
-                         Option2 |= bbcp2_SKPEDIR;
-                 else if (!strcmp(arglist.theOpt, "-omit-ie")
-                      ||  !strcmp(arglist.theOpt, "-omit-inerrs"))
-                         Option2 |= bbcp2_SKPIERR;
-                 else if (!strcmp(arglist.theOpt, "-omit-oe")
-                      ||  !strcmp(arglist.theOpt, "-omit-outerrs"))
-                         Option2 |= bbcp2_SKPOERR;
+       case 'O': Options |= bbcp_OMIT;
                  break;
        case 'p': Options |= bbcp_PCOPY;
                  break;
@@ -450,9 +445,15 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
        case '#': cout <<bbcp_Version.VData <<endl;
                  exit(0);
                  break;
-       case '+': Options |= (bbcp_RDONLY|bbcp_RXONLY);;
+       case '+': Options |= bbcp_RDONLY;
                  break;
        case '-': break;
+       case '=': Option2 |= bbcp2_SKPEDIR;
+                 break;
+       case '<': Option2 |= bbcp2_SKPIERR;
+                 break;
+       case '>': Option2 |= bbcp2_SKPOERR;
+                 break;
        default:  if (!notctl)
                     {if (cfgfd < 0) help(255);
                      Cleanup(1, argv[0], cfgfd);
@@ -478,10 +479,6 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
    if (Options & bbcp_NODNS) MyHost = MyAddr;
       else MyHost = bbcp_Net.FullHostName((char *)0);
    bbcp_HostName = MyHost;
-
-// Correct recursive readable selection option
-//
-   if (Options & bbcp_GROSS) Options &= ~bbcp_RXONLY;
 
 // If there is a checksum specification, process it now
 //
@@ -719,7 +716,6 @@ H("-E csa  specify checksum alorithm and optionally report or verify checksum.")
 H("        csa: [%]{a32|c32|md5}[=[<value> | <outfile>]]")
 H("-f      forces the copy by first unlinking the target file before copying.")
 H("-F      does not check to see if there is enough space on the target node.")
-H("-g      do a gross copy (i.e. copy even if there are no directory entries).")
 H("-h      print help information.")
 H("-i idfn is the name of the ssh identify file for source and target.")
 H("-I slfn is the name of the file that holds the list of files to be copied.")
@@ -763,6 +759,7 @@ H("-@      specifies how symbolic links are handled: copy recreates the symlink,
 H("        follow copies the symlink target, and ignore skips it (default).")
 H("-$      print the license and exit.")
 H("-#      print the version and exit.")
+H("-=      omit copying empty directories (same as --omit-emptydirs).")
 H("--      allows an option with a defaulted optional arg to appear last.")
 I("user    the user under which the copy is to be performed. The default is")
 H("        to use the current login name.")
@@ -978,7 +975,6 @@ void bbcp_Config::Config_Ctl(int rwbsz)
    if (csOpts  & bbcp_csDashE)   Add_Opt('e');
    if (Options & bbcp_FORCE)     Add_Opt('f');
    if (Options & bbcp_NOSPCHK)   Add_Opt('F');
-   if (Options & bbcp_GROSS)     Add_Opt('g');
    if (Options & bbcp_KEEP)      Add_Opt('k');
    if (Options & bbcp_NOUNLINK)  Add_Opt('K');
    if (LogSpec)                 {Add_Opt('L'); Add_Str(LogSpec);}
@@ -994,9 +990,9 @@ void bbcp_Config::Config_Ctl(int rwbsz)
    if (Options & bbcp_XPIPE)    {Add_Opt('N'); Add_Str(upSpec);}
    if (Options & bbcp_ORDER)     Add_Opt('o');
    if (Options & bbcp_OMIT)      Add_Opt('O');
-   if (Option2 & bbcp2_SKPEDIR)  Add_Str("--omit-ed")
-   if (Option2 & bbcp2_SKPIERR)  Add_Str("--omit-ie")
-   if (Option2 & bbcp2_SKPOERR)  Add_Str("--omit-oe")
+   if (Option2 & bbcp2_SKPEDIR)  Add_Opt('=');
+   if (Option2 & bbcp2_SKPIERR)  Add_Opt('<');
+   if (Option2 & bbcp2_SKPOERR)  Add_Opt('>')
    if (Options & bbcp_PCOPY)     Add_Opt((Options & bbcp_PTONLY ? '~' : 'p'));
    if (Progint)                 {Add_Opt('P'); Add_Num(Progint);}
    if ((n = bbcp_Net.QoS()))    {Add_Opt('q'); Add_Num(n); }
@@ -1027,7 +1023,7 @@ void bbcp_Config::Config_Ctl(int rwbsz)
                                  if (Options & bbcp_SLKEEP) {Add_Str("keep");}
                                     else      {Add_Str("follow");}
                                 }
-   if (Options & (bbcp_RXONLY|bbcp_RDONLY))    Add_Opt('+');
+   if (Options & bbcp_RDONLY)    Add_Opt('+');
    CopyOpts = strdup(cbuff);
 }
   
@@ -1536,14 +1532,14 @@ void bbcp_Config::setOpts(bbcp_Args &Args)
      Args.Option("nodns",      1, 'n', 0);
      Args.Option("pipe",       4, 'N', ':');
      Args.Option("order",      1, 'o', 0);
-     Args.Option("omit",       4, 'O', 0);
-     Args.Option("omit-dups",  9, 'O', 0);
-     Args.Option("omit-ed",    7, 'O', 0);
-     Args.Option("omit-emptydirs", 11, 'O', 0);
-//   Args.Option("omit-ie",    7, 'O', 0);
-//   Args.Option("omit-inerrs",    11, 'O', 0);
-//   Args.Option("omit-oe",    7, 'O', 0);
-//   Args.Option("omit-outerrs",   12, 'O', 0);
+     Args.Option("omit",       4, 'O', 0);  // List in increasing min length!
+     Args.Option("omit-ed",         7, '=', 0);
+     Args.Option("omit-ie",         7, '<', 0);
+     Args.Option("omit-oe",         7, '>', 0);
+     Args.Option("omit-dups",       9, 'O', 0);
+     Args.Option("omit-emptydirs", 11, '=', 0);
+     Args.Option("omit-inerrs",    11, '<', 0);
+     Args.Option("omit-outerrs",   12, '>', 0);
      Args.Option("preserve",   1, 'p', 0);
      Args.Option("progress",   4, 'P', ':');
      Args.Option("ptime",      2, '~', 0);

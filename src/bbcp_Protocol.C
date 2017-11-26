@@ -593,7 +593,7 @@ int bbcp_Protocol::Request(bbcp_Node *Node)
 //
    numfiles = Request_flist(totsz, numlinks, dotrim);
    if (numfiles  < 0) return Request_exit(22, dRM);
-   if (numfiles == 0 && numlinks == 0 && !(bbcp_Cfg.Options & bbcp_GROSS))
+   if (numfiles == 0 && numlinks == 0 && !(bbcp_Cfg.Options &  bbcp_AUTOMKD))
       {cout <<"200 End: 0 0" <<endl;
        return Request_exit(0, dRM);
       }
@@ -628,7 +628,7 @@ int bbcp_Protocol::Request(bbcp_Node *Node)
 //
    retc = 0;
    fp = bbcp_Cfg.srcPath;
-   while(fp && !(retc = fp->Create_Path()))  fp = fp->next;
+   while(fp && !(retc = fp->Create_Path())) fp = fp->next;
    if (retc) return Request_exit(retc);
 
 // Create all of the required symlinks

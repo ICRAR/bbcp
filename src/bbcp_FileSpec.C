@@ -385,7 +385,7 @@ bool bbcp_FileSpec::ExtendFileSpec(int &numF, int &numL, int slOpt)
    DIR           *dirp;
    char           relative_name[1024], absolute_name[4096];
    struct stat    sbuf;
-   int            accD = (bbcp_Cfg.Options & bbcp_RXONLY ? R_OK|X_OK : 0);
+   int            accD = (bbcp_Cfg.Options & bbcp_RDONLY ? R_OK|X_OK : 0);
    int            accF = (bbcp_Cfg.Options & bbcp_RDONLY ? R_OK : 0);
    int            dirFD, numEnt = 0;
    bool           aOK = true, blab = (bbcp_Cfg.Options & bbcp_VERBOSE) != 0;

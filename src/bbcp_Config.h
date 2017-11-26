@@ -242,11 +242,9 @@ int   Unpipe(char *Opts);
 #define bbcp_AUTOMKD  0x0001000000000000LL
 #define bbcp_SLFOLLOW 0x0002000000000000LL
 #define bbcp_SLKEEP   0x0004000000000000LL
-#define bbcp_GROSS    0x0008000000000000LL
 
 #define bbcp_PTONLY   0x0010000000000000LL
 #define bbcp_RDONLY   0x0020000000000000LL
-#define bbcp_RXONLY   0x0040000000000000LL
 
 /******************************************************************************/
 /*               O p t i o n 2   B i t   D e f i n i t i o n s                */

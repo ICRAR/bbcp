@@ -128,6 +128,7 @@ char *bbcp_Args::getarg(int newln)
 /******************************************************************************/
 /*                                g e t o p t                                 */
 /******************************************************************************/
+extern  const char    *bbcp_HostName;
   
 char bbcp_Args::getopt()
 {
@@ -149,6 +150,7 @@ char bbcp_Args::getopt()
       else if (inStream)
               {if (MOA) arglist = arg_stream.GetLine();
                   else  arglist = (char *)"";
+
                if (arglist && (curopt = arg_stream.GetToken(&arglist)))
                   {if (*curopt != '-') {arg_stream.RetToken(); curopt = 0;}
                       else curopt++;
@@ -168,14 +170,13 @@ char bbcp_Args::getopt()
 
 // Check for extended options or single letter option
 //
-        if (optp && strlen(curopt) > 2 && *curopt == '-'
-        && (optspec = *optp%(curopt+1)))
-           {theOpt = curopt; curopt = 0;
-            if (!(optspec = index(vopts, *optspec)))
+        if (optp && strlen(curopt) > 2 && *curopt == '-')
+           {if (!(optspec = *optp%(curopt+1))
+            ||  !(optspec = index(vopts, *optspec)))
                {cerr <<epfx <<"Invalid option, '-" <<theOpt <<"'." <<endl;
                 endopts = 1;
                 return '?';
-               }
+               } else {theOpt = curopt; curopt = 0;}
            }
    else if (!(optspec = index(vopts, *curopt))
         || *curopt == ':' || *curopt == '.')
@@ -191,7 +192,10 @@ char bbcp_Args::getopt()
 
 // Get the argument from whatever source we have
 //
-   if (inStream) argval = (MOA ? arglist : arg_stream.GetToken());
+   if (inStream)
+      {argval = (MOA ? arglist : arg_stream.GetToken());
+       curopt = 0;
+      }
       else argval = (Aloc < Argc ? Argv[Aloc++] : 0);
 
 // If we have a valid argument, then we are all done
