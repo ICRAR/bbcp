@@ -68,6 +68,7 @@ char            *tdir;
 long long        tdir_id;
 
 int   AdjustWS(char *wp, char *bp, int Final);
+void  Chk4Redir(const char *oldHost, const char *newHost);
 int   getCBPort(bbcp_Node *Node, char *&hDest);
 void  getEnd(bbcp_Node *Node);
 void  putCSV(char *Host, char *csFn, char *csVal, int csVsz);

@@ -29,11 +29,13 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include "bbcp_Config.h"
 #include "bbcp_Emsg.h"
 #include "bbcp_Headers.h"
+#include "bbcp_NetAddr.h"
 #include "bbcp_Network.h"
 #include "bbcp_Node.h"
 #include "bbcp_Protocol.h"
@@ -81,7 +83,7 @@ int bbcp_Protocol::Schedule(bbcp_Node *Fnode, bbcp_FileSpec *Ffs,
    int retc;
 
    char *cbhost, *addOpt[2], *hDest;
-   bool fcbh = false;
+   bool fcbh = false, noDNS = (bbcp_Cfg.Options & bbcp_NODNS) != 0;
 
 // Start-up the first node
 //
@@ -113,11 +115,32 @@ int bbcp_Protocol::Schedule(bbcp_Node *Fnode, bbcp_FileSpec *Ffs,
 
 // Compute callback hostname and reset callback port
 //
-        if (hDest) fcbh = cbhost = hDest;
+        if (hDest && (noDNS || !(bbcp_Cfg.Options & bbcp_VERBOSE)))
+           {cbhost = hDest; hDest = 0; fcbh = true;}
    else if (!(Ffs->hostname)) cbhost = bbcp_Cfg.MyAddr;
-   else if ((bbcp_Cfg.Options & bbcp_NODNS && isdigit(Ffs->hostname[0]))
-           ||  Ffs->hostname[0] == '[') cbhost = Ffs->hostname;
-   else fcbh = (cbhost = bbcp_Net.FullHostName(Ffs->hostname,1)) !=0;
+   else if (noDNS && !bbcp_NetAddrInfo::isHostName(Ffs->hostname))
+           cbhost = Ffs->hostname;
+   else fcbh = (cbhost = bbcp_Net.FullHostName(Ffs->hostname,(noDNS?1:0))) !=0;
+
+// If the node send us it's actual host name use it preferentially and notify
+// the user if we switched hosts if we need to do that.
+//
+   if (hDest)
+      {if (cbhost)
+          {if (!noDNS && (bbcp_Cfg.Options & bbcp_VERBOSE)
+           &&  strcmp(cbhost, hDest)) Chk4Redir(cbhost, hDest);
+           if (fcbh) free(cbhost);
+          }
+       cbhost = hDest;
+       fcbh = true;
+      }
+
+// After all of this, verify we really do have a callback host
+//
+   if (!cbhost)
+      {bbcp_Fmsg("Protocol", "Unable to determine the callback host!");
+       return EADDRNOTAVAIL;
+      }
 
 // Send the arguments
 //
@@ -934,6 +957,32 @@ int bbcp_Protocol::AdjustWS(char *wp, char *bp, int Final)
 //
    xWS = (sWS < tWS ? sWS : tWS);
    return xWS;
+}
+  
+/******************************************************************************/
+/*                             C h k 4 R e d i r                              */
+/******************************************************************************/
+
+void bbcp_Protocol::Chk4Redir(const char *oldHost, const char *newHost)
+{
+   bbcp_NetAddr oldAddr;
+   bbcp_NetAddr newAddr;
+   char buff[128];
+   int n;
+
+// Establish addresses and check if they are the same (port doesn't matter)
+//
+   oldAddr.Set(oldHost,0);
+   newAddr.Set(newHost,0);
+   if (oldAddr.Same(&newAddr)) return;
+
+// Get information to blab out
+//
+   buff[0] = '(';
+   n = newAddr.Format(buff, sizeof(buff)-8, bbcp_NetAddrInfo::fmtAddr,
+                                            bbcp_NetAddrInfo::noPort);
+   strcpy(&buff[n+1],").");
+   bbcp_Fmsg("Protocol","Host",oldHost,"redirect connection to",newHost,buff);
 }
   
 /******************************************************************************/
