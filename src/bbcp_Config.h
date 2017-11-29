@@ -247,6 +247,8 @@ int   Unpipe(char *Opts);
 
 #define bbcp_PTONLY   0x0010000000000000LL
 #define bbcp_RDONLY   0x0020000000000000LL
+//      bbcp_???      0x0040000000000000LL
+#define bbcp_RTTMP    0x0080000000000000LL
 
 /******************************************************************************/
 /*               O p t i o n 2   B i t   D e f i n i t i o n s                */

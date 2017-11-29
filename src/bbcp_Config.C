@@ -237,7 +237,7 @@ bbcp_Config::~bbcp_Config()
 
 #define bbcp_VALIDOPT1 (char *)"-a.AB:b:C:c.d:DeE:fFghi:I:kKl:L:m:nN:oOp"
 #define bbcp_VALIDOPT2         "P:q:rR.s:S:t:T:u:U:vVw:W:x:y:zZ:4.~@:$#+"
-#define bbcp_VALIDOPT3         "=<>"
+#define bbcp_VALIDOPT3         "^<>"
 #define bbcp_VALIDOPTS bbcp_VALIDOPT1 bbcp_VALIDOPT2 bbcp_VALIDOPT3
 #define bbcp_SSOPTIONS bbcp_VALIDOPTS "MH:Y:"
 
@@ -758,7 +758,7 @@ H("-@      specifies how symbolic links are handled: copy recreates the symlink,
 H("        follow copies the symlink target, and ignore skips it (default).")
 H("-$      print the license and exit.")
 H("-#      print the version and exit.")
-H("-=      omit copying empty directories (same as --omit-emptydirs).")
+H("-^      omit copying empty directories (same as --omit-emptydirs).")
 H("--      allows an option with a defaulted optional arg to appear last.")
 I("user    the user under which the copy is to be performed. The default is")
 H("        to use the current login name.")
@@ -989,7 +989,7 @@ void bbcp_Config::Config_Ctl(int rwbsz)
    if (Options & bbcp_XPIPE)    {Add_Opt('N'); Add_Str(upSpec);}
    if (Options & bbcp_ORDER)     Add_Opt('o');
    if (Options & bbcp_OMIT)      Add_Opt('O');
-   if (Option2 & bbcp2_SKPEDIR)  Add_Opt('=');
+   if (Option2 & bbcp2_SKPEDIR)  Add_Opt('^');
    if (Option2 & bbcp2_SKPIERR)  Add_Opt('<');
    if (Option2 & bbcp2_SKPOERR)  Add_Opt('>')
    if (Options & bbcp_PCOPY)     Add_Opt((Options & bbcp_PTONLY ? '~' : 'p'));
@@ -1439,6 +1439,8 @@ int bbcp_Config::ROpts(char *opts)
                           ||  (rtLimit = atoi(rOpts+2)) <= 0)
                              return ROptsErr(rOpts);
                           break;
+                case 't': Options |= bbcp_RTTMP;
+                          break;
                 case 'v': Options |= bbcp_RTCVERC;
                           break;
                 case '/':
@@ -1534,11 +1536,11 @@ void bbcp_Config::setOpts(bbcp_Args &Args)
      Args.Option("pipe",       4, 'N', ':');
      Args.Option("order",      1, 'o', 0);
      Args.Option("omit",       4, 'O', 0);  // List in increasing min length!
-     Args.Option("omit-ed",         7, '=', 0);
+     Args.Option("omit-ed",         7, '^', 0);
      Args.Option("omit-ie",         7, '<', 0);
      Args.Option("omit-oe",         7, '>', 0);
      Args.Option("omit-dups",       9, 'O', 0);
-     Args.Option("omit-emptydirs", 11, '=', 0);
+     Args.Option("omit-emptydirs", 11, '^', 0);
      Args.Option("omit-inerrs",    11, '<', 0);
      Args.Option("omit-outerrs",   12, '>', 0);
      Args.Option("preserve",   1, 'p', 0);

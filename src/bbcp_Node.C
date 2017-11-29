@@ -321,6 +321,7 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
    static const int wOnly = S_IWUSR;
 
    const char *Args = 0, *Act = "opening", *Path = fp->targpath;
+   char *tmpPath = 0;
    long tretc = 0;
    int i, oflag, retc, Mode = wOnly, progtid = 0;
    long long startoff = 0;
@@ -403,6 +404,15 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
 //
    if (bbcp_Cfg.Options & bbcp_ODIO) {fp->FSys()->DirectIO(1);
        DEBUG("Direct output requested.");}
+
+// Make temporary file name if specified
+//
+   if (bbcp_Cfg.Options & bbcp_RTTMP)
+      {tmpPath = new char[strlen(Path)+1+4];
+       strcpy(tmpPath,Path);
+       strcat(tmpPath,"_tmp");
+       Path = tmpPath;
+      }
 
 // Open the file and set the starting offset
 //
@@ -498,6 +508,15 @@ int bbcp_Node::RecvFile(bbcp_FileSpec *fp, bbcp_Node *Remote)
                    DEBUG("src size=" <<fp->Info.size <<" snk size=" <<Info.size);
                   }
       } DEBUG("Outfile " <<Path <<" closed");
+
+// Rename temporary file if necessary (we don't do it if the copy failed)
+//
+   if (bbcp_Cfg.Options & bbcp_RTTMP)
+      {if (!retc && rename(Path,fp->targpath) !=0 )
+          bbcp_Emsg("RecvFile", errno, "rename", Path);
+       delete[] tmpPath;
+       Path=fp->targpath;
+      }
 
 // Report detailed I/O stats, if so wanted
 //
