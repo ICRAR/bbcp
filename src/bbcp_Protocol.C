@@ -69,7 +69,7 @@ namespace
 struct Cmp_Key
 {
 
-   bool operator()(char const *a, char const *b)
+   bool operator()(char const *a, char const *b) const
    {
 //cerr <<"Comp " <<a <<' ' <<b <<endl;
       return strcmp(a, b) < 0;
@@ -683,7 +683,7 @@ int bbcp_Protocol::Request(bbcp_Node *Node)
 
 // Iterate through the copy set performing all required operations (recursive)
 //
-   std::map<char const *, bbcp_FileSpec *>::iterator it;
+   std::map<char const *, bbcp_FileSpec *, Cmp_Key>::iterator it;
    for (it = CopySet.begin(); it != CopySet.end(); ++it)
        {dp = it->second;
         if ((retc = dp->Create_Path())) return Request_exit(retc);
@@ -746,7 +746,7 @@ int bbcp_Protocol::Request_exit(int retc, const char *dRM)
 int bbcp_Protocol::Request_flist(long long &totsz, int &numlinks, bool dotrim)
 {
    typedef std::pair<const char *, bbcp_FileSpec *> Pair;
-   std::map<char const *, bbcp_FileSpec *>::iterator it;
+   std::map<char const *, bbcp_FileSpec *, Cmp_Key>::iterator it;
    int retc, noteol, numfiles = 0;
    char *lp, *tfn, *slash;
    int   tdln = strlen(tdir);

@@ -36,7 +36,7 @@ SUNCC      = CC
 SUNcc      = cc
 
 S86OPT     = -D_REENTRANT -DOO_STD $(NLGR) -DSUN -DSUNX86 -Wno-deprecated
-S86OPT     = $(SUNOPT) -DSUNX86 
+S86OPT     = $(SUNOPT) -DSUNX86
 
 S86CC      = CC
 S86cc      = gcc
