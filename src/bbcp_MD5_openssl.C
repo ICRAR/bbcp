@@ -43,7 +43,11 @@ void bbcp_MD5_openssl::byteReverse(unsigned char *buf, unsigned longs)
  * initialization constants.
  */
 void bbcp_MD5_openssl::MD5Init(MD5_CTX *ctx) {
+#ifdef MACOS
+    CC_MD5_Init(ctx);
+#else
     MD5_Init(ctx);
+#endif
 }
 
 /*
@@ -51,7 +55,11 @@ void bbcp_MD5_openssl::MD5Init(MD5_CTX *ctx) {
  * of bytes.
  */
 void bbcp_MD5_openssl::MD5Update(MD5_CTX *ctx, unsigned char const *buf, unsigned len) {
+#ifdef MACOS
+    CC_MD5_Update(ctx, buf, len);
+#else
     MD5_Update(ctx, buf, len);
+#endif
 }
 
 /*
@@ -60,7 +68,11 @@ void bbcp_MD5_openssl::MD5Update(MD5_CTX *ctx, unsigned char const *buf, unsigne
  */
 void bbcp_MD5_openssl::MD5Final(unsigned char digest[16], MD5_CTX *ctx)
 {    
+#ifdef MACOS
+    CC_MD5_Final(digest, ctx);
+#else
     MD5_Final(digest, ctx);
+#endif
 }
 
 #ifndef ASM_MD5

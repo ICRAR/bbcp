@@ -45,7 +45,13 @@ typedef unsigned int uint32;
 
 #include "bbcp_Headers.h"
 #include "bbcp_ChkSum.h"
+#ifdef MACOS
+#include "CommonCrypto/CommonDigest.h"
+#undef MD5_CTX
+#define MD5_CTX CC_MD5_CTX
+#else
 #include "openssl/md5.h"
+#endif
   
 class bbcp_MD5_openssl : public bbcp_ChkSum
 {

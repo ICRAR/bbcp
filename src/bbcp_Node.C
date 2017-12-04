@@ -227,11 +227,20 @@ int bbcp_Node::Run(char *user, char *host, char *prog, char *parg)
                     else Argv[numa] = ap;
                }
 
+// Add arguments (these may need to be tokenized as well)
+//
+   while(numa <= ArgvSize)
+        {while(*parg == ' ') parg++;
+         Argv[numa++] = parg;
+         while(*parg && *parg != ' ') parg++;
+         if (!(*parg)) break;
+         *parg++ = 0;
+        }
+
 // Complete argument list to start the actual copy program
 //
    if (numa >= ArgvSize) return bbcp_Emsg("Run", -E2BIG, "starting", prog);
-   Argv[numa++] = parg;
-   Argv[numa]   = 0;
+   Argv[numa] = 0;
 
 // Invoke the program
 //

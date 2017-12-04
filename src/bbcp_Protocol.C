@@ -32,6 +32,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <map>
 #include "bbcp_Config.h"
 #include "bbcp_Emsg.h"
 #include "bbcp_Headers.h"
@@ -58,6 +59,28 @@ bbcp_Node *np;
            {if (np) delete np;}
 };
 
+/******************************************************************************/
+/*                         L o c a l   O b j e c t s                          */
+/******************************************************************************/
+
+namespace
+{
+
+struct Cmp_Key
+{
+
+   bool operator()(char const *a, char const *b)
+   {
+//cerr <<"Comp " <<a <<' ' <<b <<endl;
+      return strcmp(a, b) < 0;
+   }
+
+};
+
+std::map<char const *, bbcp_FileSpec *, Cmp_Key> CopySet;
+
+}
+  
 /******************************************************************************/
 /*                      E x t e r n a l   O b j e c t s                       */
 /******************************************************************************/
@@ -548,12 +571,15 @@ int bbcp_Protocol::Process_login(bbcp_Link *Net)
 int bbcp_Protocol::Request(bbcp_Node *Node)
 {
    long long totsz=0;
-   bbcp_FileSpec *fp;
+   bbcp_FileSpec *dp, *fp;
    const char *dRM = 0;
    char buff[1024];
    int  retc, numfiles, numlinks, texists;
-   int  outDir = (bbcp_Cfg.Options & bbcp_OUTDIR) != 0;
-   bool dotrim = false;
+   int  outDir  = (bbcp_Cfg.Options & bbcp_OUTDIR) != 0;
+   bool dotrim  = false;
+   bool doPcopy = (bbcp_Cfg.Options & bbcp_PCOPY) != 0;
+   bool setDMode= (bbcp_Cfg.ModeD != bbcp_Cfg.ModeDC) != 0;
+   bool isAppend= (bbcp_Cfg.Options & bbcp_APPEND) != 0;
 
 // Establish all connections
 //
@@ -590,9 +616,8 @@ int bbcp_Protocol::Request(bbcp_Node *Node)
 //
    if (texists && bbcp_Cfg.snkSpec->Info.Otype == 'd')
        tdir = bbcp_Cfg.snkSpec->pathname;
-      else {int plen;
-            if ((plen = bbcp_Cfg.snkSpec->filename -
-                       bbcp_Cfg.snkSpec->pathname))
+      else {int  plen;
+            if ((plen = bbcp_Cfg.snkSpec->filename-bbcp_Cfg.snkSpec->pathname))
                strncpy(buff, bbcp_Cfg.snkSpec->pathname, plen-1);
                else {buff[0] = '.'; plen = 2;}
             tdir = buff; buff[plen-1] = '\0';
@@ -647,36 +672,36 @@ int bbcp_Protocol::Request(bbcp_Node *Node)
        return Request_exit(28, dRM);
       }
 
-// Create all of the required directories
-//
-   retc = 0;
-   fp = bbcp_Cfg.srcPath;
-   while(fp && !(retc = fp->Create_Path())) fp = fp->next;
-   if (retc) return Request_exit(retc);
-
-// Create all of the required symlinks
-//
-   retc = 0;
-   fp = bbcp_Cfg.slkPath;
-   while(fp && !(retc = fp->Create_Link()))  fp = fp->next;
-   if (retc) return Request_exit(retc);
-
-// Get each source file
+// Get each source file that isn't inside a directory (non-recursive copy)
 //
    fp = bbcp_Cfg.srcSpec;
    while(fp && !(retc=Request_get(fp)) && !(retc=Local->RecvFile(fp,Remote)))
-        {if (bbcp_Cfg.Options & bbcp_APPEND) totsz -= fp->targetsz;
+        {if (isAppend) totsz -= fp->targetsz;
          fp = fp->next;
         }
+   if (retc) return Request_exit(retc);
 
-// Now determine if we need to reset the stat info on any paths we created
+// Iterate through the copy set performing all required operations (recursive)
 //
-   if ((fp = bbcp_Cfg.srcPath))
-      {if (bbcp_Cfg.Options & bbcp_PCOPY)
-          {while(fp && fp->setStat(bbcp_Cfg.ModeD) == 0) fp = fp->next;}
-          else if (bbcp_Cfg.ModeD != bbcp_Cfg.ModeDC)
-                  {while(fp && fp->setMode(bbcp_Cfg.ModeD) == 0) fp = fp->next;}
-      }
+   std::map<char const *, bbcp_FileSpec *>::iterator it;
+   for (it = CopySet.begin(); it != CopySet.end(); ++it)
+       {dp = it->second;
+        if ((retc = dp->Create_Path())) return Request_exit(retc);
+        fp = dp->next;
+        while(fp)
+             {if (fp->Info.Otype == 'l')
+                 {if ((retc = fp->Create_Link())) return Request_exit(retc);
+                 } else {
+                  if ((retc = Request_get(fp))
+                  ||  (retc = Local->RecvFile(fp,Remote)))
+                     return Request_exit(retc);
+                  if (isAppend) totsz -= fp->targetsz;
+                 }
+              fp = fp->next;
+             }
+        if (doPcopy) dp->setStat(bbcp_Cfg.ModeD);
+           else if (setDMode) dp->setMode(bbcp_Cfg.ModeD);
+       }
 
 // Report back how many files and bytes were received
 //
@@ -720,12 +745,15 @@ int bbcp_Protocol::Request_exit(int retc, const char *dRM)
   
 int bbcp_Protocol::Request_flist(long long &totsz, int &numlinks, bool dotrim)
 {
+   typedef std::pair<const char *, bbcp_FileSpec *> Pair;
+   std::map<char const *, bbcp_FileSpec *>::iterator it;
    int retc, noteol, numfiles = 0;
-   char *lp, *tfn;;
+   char *lp, *tfn, *slash;
    int   tdln = strlen(tdir);
-   bbcp_FileSpec *fp, *lastfp = 0, *lastdp = 0, *lastsp = 0;
+   bbcp_FileSpec *fp;
    const char flcmd[] = "flist\n";
    const int  flcsz   = sizeof(flcmd)-1;
+   bool orphan;
 
 // Set correct target file name
 //
@@ -736,37 +764,48 @@ int bbcp_Protocol::Request_flist(long long &totsz, int &numlinks, bool dotrim)
 //
    if (Remote->Put(flcmd, flcsz)) return -1;
 
-// Now start getting all of the files to be copied
+// Now start getting all of the objects to be recreated here
 //
    numlinks = 0;
    while((lp = Remote->GetLine()) && (noteol = strcmp(lp, "eol")))
         {fp = new bbcp_FileSpec(fs_obj, Remote->NodeName());
-//       cerr <<"Get flist: " <<lp <<endl;
          if (fp->Decode(lp)) {numfiles = -1; break;}
 
                if (fp->Compose(tdir_id, tdir, tdln, tfn)
                &&  (retc = fp->Xfr_Done()))
                   {delete fp; if (retc < 0) {numfiles = -1; break;}}
           else if (fp->Info.Otype == 'd')
-                  {if (dotrim) fp->setTrim();
-                      else {if (lastdp) lastdp->next = fp;
-                               else bbcp_Cfg.srcPath = fp;
-                            lastdp = fp;
-                           }
+                  {if (dotrim) {fp->setTrim(); dotrim = false;}
+                      else CopySet.insert(Pair(fp->pathname,fp));
                   }
-          else if (fp->Info.Otype == 'l')
-                  {if (lastsp) lastsp->next = fp;
-                      else bbcp_Cfg.slkPath = fp;
-                   lastsp = fp; numlinks++;
-                  }
-/*PIPE*/  else if (fp->Info.Otype == 'f' || fp->Info.Otype == 'p')
-                  {numfiles++;
-                   totsz += fp->Info.size;
-                   if (lastfp) lastfp->next = fp;
-                   else bbcp_Cfg.srcSpec = fp;
-                   lastfp = fp;
-                  }
-          dotrim = false;
+          else {dotrim = false;
+                switch(fp->Info.Otype)
+                      {case 'f': numfiles++;
+                                 totsz += fp->Info.size;
+                                 break;
+                       case 'l': numlinks++;
+                                 break;
+                       case 'p': numfiles++;
+                                 break;
+                       default:  delete fp;
+                                 continue;
+                      }
+                if (!(slash = rindex(fp->pathname, '/'))) orphan = true;
+                   else {*slash = 0;
+                         it = CopySet.find(fp->pathname);
+                         *slash = '/';
+                         if (it == CopySet.end()) orphan = true;
+                            else {bbcp_FileSpec *gp = it->second;
+                                  fp->next = gp->next;
+                                  gp->next = fp;
+                                  orphan = false;
+                                 }
+                        }
+                if (orphan)
+                   {fp->next = bbcp_Cfg.srcSpec;
+                    bbcp_Cfg.srcSpec = fp;
+                   }
+               }
         }
 
 // Flush the input queue if need be

@@ -218,7 +218,7 @@ makeLinuxx86_64 makeLinuxaarch64:
 	LIBS="$(LNXLIBS64)"
 
 Darwin:
-	@MACOSX_DEPLOYMENT_TARGET=10.5;\
+	@MACOSX_DEPLOYMENT_TARGET=10.11;\
 	make $(MKPARMS)  \
 	CC=$(MACCC) \
 	BB=$(MACcc) \

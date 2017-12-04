@@ -124,14 +124,13 @@ char          csString[44];
 char          ubSpec[4];
 char          upSpec[4];
 
-bbcp_FileSpec  *slkPath;
 bbcp_FileSpec  *srcPath;
 bbcp_FileSpec  *srcSpec;
 bbcp_FileSpec  *srcLast;
 bbcp_FileSpec  *snkSpec;
 
-const char *SrcArg;
-const char *SnkArg;
+char           *SrcArg;
+char           *SnkArg;
 
 void  Arguments(int argc, char **argv, int cfgfd=-1);
 int   ConfigInit(int argc, char **argv);
@@ -168,6 +167,7 @@ void  ParseSB(char *spec);
 int   ROpts(char *Opts);
 int   ROptsErr(char *Opts);
 char *Rtoken(void);
+void  setArgs(const char *aType, char *&aDst, char *aSrc);
 int   setIPV4(char *Opts);
 void  setOpts(bbcp_Args &Args);
 int   setPorts(char *pspec);

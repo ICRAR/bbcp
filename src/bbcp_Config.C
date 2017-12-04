@@ -119,7 +119,6 @@ bbcp_Config::bbcp_Config()
    SrcUser   = 0;
    SrcHost   = 0;
    SrcBlen   = 0;
-   slkPath   = 0;
    srcPath   = 0;
    srcSpec   = 0;
    srcLast   = 0;
@@ -166,8 +165,8 @@ bbcp_Config::bbcp_Config()
    Wsize     = 131072;
    MaxWindow = 0;
    lastseqno = 0;
-   SrcArg    = "SRC";
-   SnkArg    = "SNK";
+   SrcArg    = strdup("SRC");
+   SnkArg    = strdup("SNK");
    CKPdir    = 0;
    IDfn      = 0;
    TimeLimit = 0;
@@ -259,6 +258,7 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
 //
    if (argc < 2) Hmsg1("Copy arguments not specified.");
    notctl = (Options & (bbcp_SRC | bbcp_SNK));
+
 //DEBUG
 // if (Options & bbcp_SRC) bbcp_HostName = "SRC";
 // if (Options & bbcp_SNK) bbcp_HostName = "SNK";
@@ -308,6 +308,7 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
                     } else ParseSB(arglist.argval);
                  break;
        case 'D': Options |= bbcp_TRACE;
+                 chdir("/tmp"); // Where the core file goes
                  break;
        case 'e': csOpts  |= bbcp_csDashE|bbcp_csLink;
                  break;
@@ -380,14 +381,18 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
        case 's': if (a2n("streams", arglist.argval,
                          Streams,1,BBCP_MAXSTREAMS)) Cleanup(1, argv[0], cfgfd);
                  break;
-       case 'S': if (SrcXeq) free(SrcXeq);
-                 SrcXeq = strdup(arglist.argval);
+       case 'S': if (*arglist.argval != '+')
+                    {if (SrcXeq) free(SrcXeq);
+                     SrcXeq = strdup(arglist.argval);
+                    } else setArgs("SRC", SrcArg, arglist.argval+1);
                  break;
        case 't': if (a2sz("time limit", arglist.argval,
                          TimeLimit,1,((int)1)<<30)) Cleanup(1, argv[0], cfgfd);
                  break;
-       case 'T': if (SnkXeq) free(SnkXeq);
-                 SnkXeq = strdup(arglist.argval);
+       case 'T': if (*arglist.argval != '+')
+                    {if (SnkXeq) free(SnkXeq);
+                     SnkXeq = strdup(arglist.argval);
+                    } else setArgs("SNK", SnkArg, arglist.argval+1);
                  break;
        case 'v': Options |= bbcp_VERBOSE;
                  if (xTrace < 2) xTrace = 2;
@@ -690,7 +695,6 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
   
 void bbcp_Config::help(int rc)
 {
-chdir("/tmp");
 H("Usage:   bbcp [Options] [Inspec] Outspec")
 I("Options: [-a [dir]] [-A] [-b [+]bf] [-B bsz] [-c [lvl]] [-C cfn] [-D] [-d path]")
 H("         [-e] [-E csa] [-f] [-F] [-g] [-h] [-i idfn] [-I slfn] [-k] [-K]")
@@ -794,9 +798,9 @@ int bbcp_Config::ConfigInit(int argc, char **argv)
 // Make sure we have at least one argument to determine who we are
 //
    if (argc >= 2)
-     {     if (!strcmp(argv[1], SrcArg))
+     {     if (!strcmp(argv[1], "SRC"))
             {Options |= bbcp_SRC; bbcp_Debug.Who = (char *)"SRC"; return 0;}
-      else if (!strcmp(argv[1], SnkArg))
+      else if (!strcmp(argv[1], "SNK"))
             {Options |= bbcp_SNK; bbcp_Debug.Who = (char *)"SNK"; return 0;}
       else MyProg = strdup(argv[0]);
      }
@@ -1466,6 +1470,32 @@ int bbcp_Config::ROptsErr(char *eTxt)
     return -1;
 }
  
+/******************************************************************************/
+/*                               s e t A r g s                                */
+/******************************************************************************/
+
+void bbcp_Config::setArgs(const char *aType, char *&aDst, char *aSrc)
+{
+   int n;
+
+// Free up whatever is in the destination arg
+//
+   if (aDst) free(aDst);
+
+// Trim of leading spaces from the source arg
+//
+   while(*aSrc == ' ') aSrc++;
+
+// Allocate needed storage
+//
+   n = strlen(aType) + 1 + strlen(aSrc) + 1;
+   aDst = (char *)malloc(n);
+
+// Format the arguments and set them
+//
+   snprintf(aDst, n, "%s %s", aType, aSrc);
+}
+
 /******************************************************************************/
 /*                                 s e t C S                                  */
 /******************************************************************************/
