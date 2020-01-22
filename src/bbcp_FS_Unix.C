@@ -76,13 +76,9 @@ extern bbcp_System bbcp_OS;
   
 int bbcp_FS_Unix::Applicable(const char *path)
 {
-// Duplicate the path and only consider the first component (mount point)
+// Duplicate the path for usage in Enough
 //
-   if (!fs_path)
-      {char *slash;
-       fs_path = strdup(path);
-       if ((slash = index(fs_path+1, '/'))) *slash = 0;
-      }
+   if (!fs_path) fs_path = strdup(path);
 
 // FREEBSD doesn't have a statvfs, so we punt
 //
