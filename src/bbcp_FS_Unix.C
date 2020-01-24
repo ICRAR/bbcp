@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <libgen.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
@@ -78,7 +79,10 @@ int bbcp_FS_Unix::Applicable(const char *path)
 {
 // Duplicate the path for usage in Enough
 //
-   if (!fs_path) fs_path = strdup(path);
+   if (!fs_path)
+      {fs_path = strdup(path);
+       fs_path = dirname(fs_path);
+      }
 
 // FREEBSD doesn't have a statvfs, so we punt
 //
