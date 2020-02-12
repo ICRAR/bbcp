@@ -234,7 +234,7 @@ bbcp_Config::~bbcp_Config()
 #define Cat_Oct(x) {            cbp=n2a(x,&cbp[0],"%o");}
 #define Add_Str(x) {cbp[0]=' '; strcpy(&cbp[1], x); cbp+=strlen(x)+1;}
 
-#define bbcp_VALIDOPT1 (char *)"-a.AB:b:C:c.d:DeE:fFghi:I:kKl:L:m:nN:oOp"
+#define bbcp_VALIDOPT1 (char *)"-a.AB:b:C:c.d:DeE:fFghi:I:jkKl:L:m:nN:oOp"
 #define bbcp_VALIDOPT2         "P:q:rR.s:S:t:T:u:U:vVw:W:x:y:zZ:4.~@:$#+"
 #define bbcp_VALIDOPT3         "^<>"
 #define bbcp_VALIDOPTS bbcp_VALIDOPT1 bbcp_VALIDOPT2 bbcp_VALIDOPT3
@@ -333,6 +333,8 @@ void bbcp_Config::Arguments(int argc, char **argv, int cfgfd)
                  break;
        case 'I': if (inFN) free(inFN);
                  inFN = strdup(arglist.argval);
+                 break;
+       case 'j': Options |= bbcp_USEFSPEC;
                  break;
        case 'k': Options |= bbcp_KEEP | bbcp_ORDER;
                  break;
