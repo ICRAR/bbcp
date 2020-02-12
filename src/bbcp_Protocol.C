@@ -107,6 +107,7 @@ int bbcp_Protocol::Schedule(bbcp_Node *Fnode, bbcp_FileSpec *Ffs,
 
    char *cbhost, *addOpt[2], *hDest;
    bool fcbh = false, noDNS = (bbcp_Cfg.Options & bbcp_NODNS) != 0;
+   bool use_fspec = bbcp_Cfg.Options & bbcp_USEFSPEC;
 
 // Start-up the first node
 //
@@ -138,7 +139,7 @@ int bbcp_Protocol::Schedule(bbcp_Node *Fnode, bbcp_FileSpec *Ffs,
 
 // Compute callback hostname and reset callback port
 //
-        if (hDest && (noDNS || !(bbcp_Cfg.Options & bbcp_VERBOSE)))
+        if (!use_fspec && hDest && (noDNS || !(bbcp_Cfg.Options & bbcp_VERBOSE)))
            {cbhost = hDest; hDest = 0; fcbh = true;}
    else if (!(Ffs->hostname)) cbhost = bbcp_Cfg.MyAddr;
    else if (noDNS && !bbcp_NetAddrInfo::isHostName(Ffs->hostname))
@@ -148,7 +149,7 @@ int bbcp_Protocol::Schedule(bbcp_Node *Fnode, bbcp_FileSpec *Ffs,
 // If the node send us it's actual host name use it preferentially and notify
 // the user if we switched hosts if we need to do that.
 //
-   if (hDest)
+   if (!use_fspec && hDest)
       {if (cbhost)
           {if (!noDNS && (bbcp_Cfg.Options & bbcp_VERBOSE)
            &&  strcmp(cbhost, hDest)) Chk4Redir(cbhost, hDest);
