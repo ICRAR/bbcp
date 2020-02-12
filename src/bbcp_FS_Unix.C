@@ -120,6 +120,7 @@ int bbcp_FS_Unix::Enough(long long bytes, int numfiles)
 
 // Perform a stat call on the filesystem
 //
+   DEBUG("Checking FS stats for " << fs_path);
    if (statvfs(fs_path, &buf)) return 0;
 
 // Calculate free space
@@ -306,6 +307,7 @@ int bbcp_FS_Unix::Stat(const char *path, bbcp_FileInfo *sbuff)
 {
    struct stat xbuff;
 
+   DEBUG("FS_Unix::Stat for " << path );
 // Perform the stat function
 //
    if (stat(path, &xbuff)) return -errno;
@@ -321,6 +323,8 @@ int bbcp_FS_Unix::Stat(const char *path, const char *dent, int fd,
    struct stat xbuff;
    char lbuff[2048];
    int n;
+
+   DEBUG("FS_Unix::Stat for " << path << ", dent=" << dent << ", fd=" << fd);
 
 // Perform the stat function
 //

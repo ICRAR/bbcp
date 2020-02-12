@@ -26,6 +26,9 @@
 /* specific prior written permission of the institution or contributor.       */
 /******************************************************************************/
   
+#include <unistd.h>
+
+#include "bbcp_Debug.h"
 #include "bbcp_Headers.h"
 #include "bbcp_FS_Null.h"
 #include "bbcp_FS_Pipe.h"
@@ -47,6 +50,8 @@ bbcp_FileSystem *bbcp_FileSystem::getFS(const char *path, int Opts)
    static bbcp_FS_Pipe bbcp_PIPE;
    static bbcp_FS_Unix bbcp_UFS;
 
+   char cwd[1024];
+   DEBUG("getFS: " << path << " running in " << getcwd(cwd, 1024));
 // Simply try each supported filesystem (add more as they are defined)
 //
    if (bbcp_NULL.Applicable(path))  return (bbcp_FileSystem *)&bbcp_NULL;
